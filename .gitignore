@@ -1,0 +1,27 @@
+# Common development-related files and directories
+/.DS_Store
+/Thumbs.db
+/ehthumbs.db
+/.sass-cache/
+/node_modules/
+/vendor/
+/composer.lock
+/package-lock.json
+/yarn.lock
+/build/
+/dist/
+*.log
+*.bak
+*.tmp
+*.zip
+*.rar
+*.tar.gz
+*.sublime-project
+*.sublime-workspace
+*.vscode/
+.idea/
+
+# Plugin-specific exclusions (adjust as needed)
+# Example: if your plugin generates a specific log file or cache directory
+# /my-plugin-name/logs/
+# /my-plugin-name/cache/
