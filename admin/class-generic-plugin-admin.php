@@ -29,6 +29,7 @@ class Generic_Plugin_Admin
     {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'init_settings'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
         add_filter('plugin_action_links_' . GP_PLUGIN_BASENAME, array($this, 'add_action_links'));
     }
 
@@ -77,6 +78,35 @@ class Generic_Plugin_Admin
             'gp_main_section',
             array('field' => 'plugin_text', 'placeholder' => __('Enter text...', 'generic-plugin'))
         );
+    }
+
+    public function enqueue_assets($hook)
+    {
+        // Only load on plugin admin pages
+        if (strpos($hook, 'generic-plugin') === false) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'generic-plugin-admin',
+            GP_ASSETS_URL . 'css/admin.css',
+            array(),
+            GP_VERSION
+        );
+
+        wp_enqueue_script(
+            'generic-plugin-admin',
+            GP_ASSETS_URL . 'js/admin.js',
+            array('jquery'),
+            GP_VERSION,
+            true
+        );
+
+        // Localize script for admin AJAX if needed
+        wp_localize_script('generic-plugin-admin', 'gp_admin_ajax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('gp_admin_nonce'),
+        ));
     }
 
     /**
