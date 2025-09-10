@@ -12,7 +12,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Generic_Plugin_Settings
+class Pronto_AB_Settings
 {
 
     /**
@@ -20,7 +20,7 @@ class Generic_Plugin_Settings
      */
     public function get($key, $default = null)
     {
-        $settings = get_option('gp_settings', array());
+        $settings = get_option('PAB_settings', array());
         return isset($settings[$key]) ? $settings[$key] : $default;
     }
 
@@ -29,9 +29,9 @@ class Generic_Plugin_Settings
      */
     public function update($key, $value)
     {
-        $settings = get_option('gp_settings', array());
+        $settings = get_option('PAB_settings', array());
         $settings[$key] = $value;
-        return update_option('gp_settings', $settings);
+        return update_option('PAB_settings', $settings);
     }
 
     /**
@@ -39,6 +39,6 @@ class Generic_Plugin_Settings
      */
     public function get_all()
     {
-        return get_option('gp_settings', array());
+        return get_option('PAB_settings', array());
     }
 }

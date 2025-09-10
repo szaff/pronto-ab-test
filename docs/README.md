@@ -5,10 +5,10 @@ A clean, well-structured WordPress plugin template designed as a starting point 
 ## 📁 Project Structure
 
 ```
-generic-plugin/
+pronto-ab/
 ├── admin/                          # Admin-only functionality
-│   ├── class-generic-plugin-admin.php       # Main admin class
-│   └── class-generic-plugin-settings.php    # Settings management
+│   ├── class-pronto-ab-admin.php       # Main admin class
+│   └── class-pronto-ab-settings.php    # Settings management
 ├── assets/                         # Frontend assets
 │   ├── css/
 │   │   ├── admin.css              # Admin styles (empty)
@@ -20,14 +20,14 @@ generic-plugin/
 │   ├── CHANGELOG.md               # Version history (empty)
 │   └── README.md                  # Documentation (empty)
 ├── includes/                      # Core functionality
-│   ├── class-generic-plugin-core.php        # Core class (empty)
-│   └── class-generic-plugin-helpers.php     # Helper functions (empty)
+│   ├── class-pronto-ab-core.php        # Core class (empty)
+│   └── class-pronto-ab-helpers.php     # Helper functions (empty)
 ├── languages/                     # Internationalization
-│   └── generic-plugin.pot         # Translation template (empty)
+│   └── pronto-ab.pot         # Translation template (empty)
 ├── public/                        # Frontend functionality
-│   └── class-generic-plugin-public.php      # Public-facing features
+│   └── class-pronto-ab-public.php      # Public-facing features
 ├── templates/                     # Template files (empty directory)
-└── generic-plugin.php             # Main plugin file
+└── pronto-ab.php             # Main plugin file
 ```
 
 ## 🚀 Quick Start
@@ -35,16 +35,16 @@ generic-plugin/
 ### 1. Download and Customize
 
 1. **Clone or download** this template
-2. **Rename the folder** from `generic-plugin` to your plugin name
+2. **Rename the folder** from `pronto-ab` to your plugin name
 3. **Find and replace** the following throughout all files:
-   - `Generic_Plugin` → `Your_Plugin_Name`
-   - `generic-plugin` → `your-plugin-name`
-   - `GP_` → `YPN_` (or your preferred prefix)
-   - `gp_` → `ypn_` (or your preferred prefix)
+   - `Pronto_AB` → `Your_Plugin_Name`
+   - `pronto-ab` → `your-plugin-name`
+   - `PAB_` → `YPN_` (or your preferred prefix)
+   - `PAB_` → `ypn_` (or your preferred prefix)
 
 ### 2. Update Plugin Headers
 
-Edit `generic-plugin.php` (your main file) and update:
+Edit `pronto-ab.php` (your main file) and update:
 
 ```php
 /**
@@ -83,18 +83,18 @@ define('YPN_PLUGIN_FILE', __FILE__);
 
 ### What's Ready to Use
 
-1. **Basic Admin Settings Page** (`admin/class-generic-plugin-admin.php`)
+1. **Basic Admin Settings Page** (`admin/class-pronto-ab-admin.php`)
 
    - Located under Settings → Generic Plugin
    - Two sample fields: checkbox and text input
    - Proper sanitization and validation
 
-2. **Public Shortcode** (`public/class-generic-plugin-public.php`)
+2. **Public Shortcode** (`public/class-pronto-ab-public.php`)
 
-   - `[generic_plugin]` shortcode available
+   - `[pronto_ab]` shortcode available
    - Conditional asset loading (only when shortcode is used)
 
-3. **Settings Management** (`admin/class-generic-plugin-settings.php`)
+3. **Settings Management** (`admin/class-pronto-ab-settings.php`)
    - Helper methods for getting/setting options
    - Centralized settings management
 
@@ -188,8 +188,8 @@ public function handle_ajax() {
 1. **Empty Files**: Several files are empty and could be removed until needed:
 
    - All CSS/JS files in `assets/`
-   - `includes/class-generic-plugin-core.php`
-   - `includes/class-generic-plugin-helpers.php`
+   - `includes/class-pronto-ab-core.php`
+   - `includes/class-pronto-ab-helpers.php`
    - Documentation files
 
 2. **Over-Engineering for Simple Plugins**:
@@ -241,7 +241,7 @@ The template has asset enqueuing in multiple places:
 
 **Remove asset enqueuing from the main class** and let each component handle its own assets:
 
-#### 1. Update Main Class (`generic-plugin.php`)
+#### 1. Update Main Class (`pronto-ab.php`)
 
 ```php
 // REMOVE these methods from the main class:
@@ -258,48 +258,48 @@ The template has asset enqueuing in multiple places:
 The public class already handles this correctly with conditional loading:
 
 ```php
-// public/class-generic-plugin-public.php
+// public/class-pronto-ab-public.php
 public function enqueue_assets() {
     // Only load if shortcode is present - GOOD!
     if (! $this->should_load_assets()) {
         return;
     }
 
-    wp_enqueue_style('generic-plugin', GP_ASSETS_URL . 'css/public.css', array(), GP_VERSION);
-    wp_enqueue_script('generic-plugin', GP_ASSETS_URL . 'js/public.js', array('jquery'), GP_VERSION, true);
+    wp_enqueue_style('pronto-ab', PAB_ASSETS_URL . 'css/public.css', array(), PAB_VERSION);
+    wp_enqueue_script('pronto-ab', PAB_ASSETS_URL . 'js/public.js', array('jquery'), PAB_VERSION, true);
 }
 ```
 
 #### 3. Add Admin Assets to Admin Class
 
 ```php
-// admin/class-generic-plugin-admin.php
+// admin/class-pronto-ab-admin.php
 private function init_hooks() {
     add_action('admin_menu', array($this, 'add_admin_menu'));
     add_action('admin_init', array($this, 'init_settings'));
     add_action('admin_enqueue_scripts', array($this, 'enqueue_assets')); // ADD THIS
-    add_filter('plugin_action_links_' . GP_PLUGIN_BASENAME, array($this, 'add_action_links'));
+    add_filter('plugin_action_links_' . PAB_PLUGIN_BASENAME, array($this, 'add_action_links'));
 }
 
 // ADD THIS METHOD
 public function enqueue_assets($hook) {
     // Only load on plugin admin pages
-    if (strpos($hook, 'generic-plugin') === false) {
+    if (strpos($hook, 'pronto-ab') === false) {
         return;
     }
 
     wp_enqueue_style(
-        'generic-plugin-admin',
-        GP_ASSETS_URL . 'css/admin.css',
+        'pronto-ab-admin',
+        PAB_ASSETS_URL . 'css/admin.css',
         array(),
-        GP_VERSION
+        PAB_VERSION
     );
 
     wp_enqueue_script(
-        'generic-plugin-admin',
-        GP_ASSETS_URL . 'js/admin.js',
+        'pronto-ab-admin',
+        PAB_ASSETS_URL . 'js/admin.js',
         array('jquery'),
-        GP_VERSION,
+        PAB_VERSION,
         true
     );
 }
@@ -318,8 +318,8 @@ public function enqueue_assets($hook) {
 For complex plugins with many assets, consider a dedicated asset manager:
 
 ```php
-// includes/class-generic-plugin-assets.php
-class Generic_Plugin_Assets {
+// includes/class-pronto-ab-assets.php
+class Pronto_AB_Assets {
 
     public function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public'));

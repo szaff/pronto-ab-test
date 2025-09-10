@@ -11,7 +11,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-class Generic_Plugin_Public
+class Pronto_AB_Public
 {
 
     /**
@@ -42,17 +42,17 @@ class Generic_Plugin_Public
         }
 
         wp_enqueue_style(
-            'generic-plugin',
-            GP_ASSETS_URL . 'css/public.css',
+            'pronto-ab',
+            PAB_ASSETS_URL . 'css/public.css',
             array(),
-            GP_VERSION
+            PAB_VERSION
         );
 
         wp_enqueue_script(
-            'generic-plugin',
-            GP_ASSETS_URL . 'js/public.js',
+            'pronto-ab',
+            PAB_ASSETS_URL . 'js/public.js',
             array('jquery'),
-            GP_VERSION,
+            PAB_VERSION,
             true
         );
     }
@@ -62,7 +62,7 @@ class Generic_Plugin_Public
      */
     public function register_shortcodes()
     {
-        add_shortcode('generic_plugin', array($this, 'shortcode_handler'));
+        add_shortcode('pronto_ab', array($this, 'shortcode_handler'));
     }
 
     /**
@@ -71,11 +71,11 @@ class Generic_Plugin_Public
     public function shortcode_handler($atts)
     {
         $atts = shortcode_atts(array(
-            'class' => 'generic-plugin'
+            'class' => 'pronto-ab'
         ), $atts);
 
         return '<div class="' . esc_attr($atts['class']) . '">' .
-            esc_html__('Generic Plugin Output', 'generic-plugin') .
+            esc_html__('Generic Plugin Output', 'pronto-ab') .
             '</div>';
     }
 
@@ -85,6 +85,6 @@ class Generic_Plugin_Public
     private function should_load_assets()
     {
         global $post;
-        return is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'generic_plugin');
+        return is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'pronto_ab');
     }
 }
