@@ -107,6 +107,9 @@ class Pronto_AB
         // Asset hooks
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+
+        // A/B Test AJAX handlers
+        add_action('wp_ajax_pronto_ab_get_posts', array($this, 'ajax_get_posts'));
     }
 
     /**
@@ -208,7 +211,7 @@ class Pronto_AB
         delete_option('PAB_options');
 
         // Remove database tables if needed
-        // self::drop_tables();
+        Pronto_AB_Database::drop_tables();
 
         // Clear any cached data
         wp_cache_flush();
@@ -222,6 +225,11 @@ class Pronto_AB
         // Check requirements
         if (! $this->check_requirements()) {
             return;
+        }
+
+        // Check if database needs update
+        if (Pronto_AB_Database::needs_update()) {
+            Pronto_AB_Database::create_tables();
         }
 
         // Load components based on context
@@ -410,13 +418,38 @@ class Pronto_AB
         );
     }
 
+
+    /**
+     * Ajax Handler Method
+     */
+    public function ajax_get_posts()
+    {
+        check_ajax_referer('ab_test_get_posts', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permission denied');
+        }
+
+        $post_type = sanitize_text_field($_POST['post_type']);
+        $posts = get_posts(array(
+            'post_type' => $post_type,
+            'post_status' => 'publish',
+            'numberposts' => 100,
+            'orderby' => 'title',
+            'order' => 'ASC',
+            'fields' => array('ID', 'post_title')
+        ));
+
+        wp_send_json_success($posts);
+    }
+
     /**
      * Create database tables
      */
     private function create_tables()
     {
         // Override in specific plugin implementation
-        // Example table creation code would go here
+        Pronto_AB_Database::create_tables();
     }
 
     /**
