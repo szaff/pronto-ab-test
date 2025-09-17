@@ -109,7 +109,7 @@ class Pronto_AB
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
         // A/B Test AJAX handlers
-        add_action('wp_ajax_pronto_ab_get_posts', array($this, 'ajax_get_posts'));
+        add_action('wp_ajax_pronto_ab_get_posts', array('Pronto_AB_Admin', 'ajax_get_posts'));
     }
 
     /**

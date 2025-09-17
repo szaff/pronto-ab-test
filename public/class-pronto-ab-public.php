@@ -3,7 +3,7 @@
 /**
  * Public functionality for A/B Testing
  * 
- * Handles frontend display and tracking
+ * Handles frontend display and tracking with hybrid session/transient approach
  */
 
 // Prevent direct access
@@ -23,10 +23,15 @@ class Pronto_AB_Public
     }
 
     /**
-     * Initialize hooks
+     * Initialize hooks - only if there are active campaigns
      */
     private function init_hooks()
     {
+        // Check for active campaigns first to avoid unnecessary overhead
+        if (!$this->has_active_campaigns()) {
+            return;
+        }
+
         add_action('wp_enqueue_scripts', array($this, 'enqueue_assets'));
         add_action('wp_head', array($this, 'render_tracking_script'));
         add_action('the_content', array($this, 'filter_content'));
@@ -42,11 +47,6 @@ class Pronto_AB_Public
      */
     public function enqueue_assets()
     {
-        // Only load if there are active campaigns
-        if (!$this->has_active_campaigns()) {
-            return;
-        }
-
         wp_enqueue_script(
             'pronto-ab-public',
             PAB_ASSETS_URL . 'js/pronto-ab-public.js',
@@ -128,6 +128,57 @@ class Pronto_AB_Public
     }
 
     /**
+     * HYBRID SESSION/TRANSIENT METHODS
+     */
+
+    /**
+     * Get stored value with transient priority, session fallback
+     */
+    private function get_visitor_assignment($key, $default = null)
+    {
+        $visitor_id = $this->get_visitor_id();
+        $transient_key = 'pronto_ab_' . $visitor_id . '_' . $key;
+
+        // Try transient first (survives page loads, cache-friendly)
+        $value = get_transient($transient_key);
+        if ($value !== false) {
+            return $value;
+        }
+
+        // Fallback to session (for immediate consistency)
+        if (session_status() !== PHP_SESSION_NONE && isset($_SESSION[$key])) {
+            $value = $_SESSION[$key];
+            // Upgrade to transient for future requests
+            set_transient($transient_key, $value, 30 * DAY_IN_SECONDS);
+            return $value;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Store visitor assignment in both transient and session
+     */
+    private function set_visitor_assignment($key, $value, $expire_seconds = null)
+    {
+        $visitor_id = $this->get_visitor_id();
+        $transient_key = 'pronto_ab_' . $visitor_id . '_' . $key;
+
+        // Store in transient (persistent across requests)
+        $expire = $expire_seconds ?: (30 * DAY_IN_SECONDS);
+        set_transient($transient_key, $value, $expire);
+
+        // Also store in session for immediate access (if session available)
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start(); // Use @ to suppress warnings
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION[$key] = $value;
+        }
+    }
+
+    /**
      * Get active campaigns for a specific post
      */
     private function get_active_campaigns_for_post($post_id, $post_type)
@@ -144,8 +195,12 @@ class Pronto_AB_Public
             AND (end_date IS NULL OR end_date >= NOW())
         ", $post_id, $post_type));
 
+        if (empty($campaigns)) {
+            return array();
+        }
+
         return array_map(function ($campaign_data) {
-            return new pronto_ab_Campaign($campaign_data);
+            return new Pronto_AB_Campaign((array) $campaign_data);
         }, $campaigns);
     }
 
@@ -156,36 +211,38 @@ class Pronto_AB_Public
     {
         $variation = $this->get_visitor_variation($campaign);
 
-        if (!$variation || $variation->is_control) {
-            // Track impression for control
-            if ($variation) {
-                $this->track_impression($campaign->id, $variation->id);
-            }
+        if (!$variation) {
             return $content;
         }
 
-        // Track impression
+        // Track impression for all variations (including control)
         $this->track_impression($campaign->id, $variation->id);
 
+        // If it's the control variation, return original content
+        if ($variation->is_control) {
+            return $content;
+        }
+
         // Replace content with variation
-        // This is a simple implementation - you might want more sophisticated content replacement
         return '<div class="pronto-ab-content" data-campaign="' . esc_attr($campaign->id) . '" data-variation="' . esc_attr($variation->id) . '">' .
             wp_kses_post($variation->content) .
             '</div>';
     }
 
     /**
-     * Get the appropriate variation for the current visitor
+     * Get the appropriate variation for the current visitor using hybrid approach
      */
     private function get_visitor_variation($campaign)
     {
-        $visitor_id = $this->get_visitor_id();
-        $session_key = 'pronto_ab_campaign_' . $campaign->id;
+        $session_key = 'campaign_' . $campaign->id;
 
         // Check if visitor already has an assigned variation
-        if (isset($_SESSION[$session_key])) {
-            $variation_id = $_SESSION[$session_key];
-            return pronto_ab_Variation::find($variation_id);
+        $variation_id = $this->get_visitor_assignment($session_key);
+        if ($variation_id) {
+            $variation = Pronto_AB_Variation::find($variation_id);
+            if ($variation) {
+                return $variation;
+            }
         }
 
         // Get all variations for this campaign
@@ -194,14 +251,14 @@ class Pronto_AB_Public
             return null;
         }
 
-        // Simple random assignment based on weights
+        // Assign random variation based on weights
         $variation = $this->assign_random_variation($variations);
-
-        // Store assignment in session
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        if (!$variation) {
+            return null;
         }
-        $_SESSION[$session_key] = $variation->id;
+
+        // Store assignment using hybrid approach
+        $this->set_visitor_assignment($session_key, $variation->id);
 
         return $variation;
     }
@@ -211,113 +268,122 @@ class Pronto_AB_Public
      */
     private function assign_random_variation($variations)
     {
+        if (empty($variations)) {
+            return null;
+        }
+
         $total_weight = array_sum(array_map(function ($v) {
-            return $v->weight_percentage;
+            return floatval($v->weight_percentage);
         }, $variations));
 
         if ($total_weight <= 0) {
             return $variations[0]; // Return first variation if no weights
         }
 
-        $random = mt_rand(1, $total_weight * 100) / 100;
+        $random = mt_rand(1, intval($total_weight * 100)) / 100;
         $cumulative = 0;
 
         foreach ($variations as $variation) {
-            $cumulative += $variation->weight_percentage;
+            $cumulative += floatval($variation->weight_percentage);
             if ($random <= $cumulative) {
                 return $variation;
             }
         }
 
-        return $variations[0]; // Fallback
+        return $variations[0]; // Fallback to first variation
     }
 
     /**
-     * Get unique visitor ID
+     * Get unique visitor ID with enhanced persistence
      */
     private function get_visitor_id()
     {
         $cookie_name = 'pronto_ab_visitor_id';
 
-        if (isset($_COOKIE[$cookie_name])) {
+        // Try to get from cookie first
+        if (isset($_COOKIE[$cookie_name]) && !empty($_COOKIE[$cookie_name])) {
             return sanitize_text_field($_COOKIE[$cookie_name]);
         }
 
-        $visitor_id = wp_generate_uuid4();
-        setcookie($cookie_name, $visitor_id, time() + (86400 * 365), '/'); // 1 year
+        // Try to get from transient (fallback for cookie-disabled users)
+        $ip_hash = md5(
+            ($_SERVER['REMOTE_ADDR'] ?? '') .
+                ($_SERVER['HTTP_USER_AGENT'] ?? '') .
+                ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')
+        );
+        $transient_key = 'pronto_ab_visitor_ip_' . $ip_hash;
+        $visitor_id = get_transient($transient_key);
+
+        if (!$visitor_id) {
+            $visitor_id = wp_generate_uuid4();
+            // Store in transient as backup (30 days)
+            set_transient($transient_key, $visitor_id, 30 * DAY_IN_SECONDS);
+        }
+
+        // Set secure cookie (1 year)
+        $secure = is_ssl();
+        $httponly = true;
+        setcookie($cookie_name, $visitor_id, time() + (365 * DAY_IN_SECONDS), '/', '', $secure, $httponly);
 
         return $visitor_id;
     }
 
     /**
-     * Track impression
+     * Track impression using hybrid approach
      */
     private function track_impression($campaign_id, $variation_id)
     {
-        $visitor_id = $this->get_visitor_id();
+        $impression_key = 'impression_' . $campaign_id . '_' . $variation_id;
 
-        // Avoid duplicate impressions in the same session
-        $session_key = 'pronto_ab_impression_' . $campaign_id . '_' . $variation_id;
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        if (isset($_SESSION[$session_key])) {
-            return; // Already tracked this impression
-        }
-
-        pronto_ab_Analytics::track_event($campaign_id, $variation_id, 'impression', $visitor_id);
-        $_SESSION[$session_key] = true;
-    }
-
-    /**
-     * Check if there are active campaigns
-     */
-    private function has_active_campaigns()
-    {
-        global $wpdb;
-
-        $table = Pronto_AB_Database::get_campaigns_table();
-        $count = $wpdb->get_var("
-            SELECT COUNT(*) FROM $table 
-            WHERE status = 'active'
-            AND (start_date IS NULL OR start_date <= NOW())
-            AND (end_date IS NULL OR end_date >= NOW())
-        ");
-
-        return $count > 0;
-    }
-
-    /**
-     * Render tracking script in head
-     */
-    public function render_tracking_script()
-    {
-        if (!$this->has_active_campaigns()) {
+        // Check if already tracked (avoid duplicates)
+        if ($this->get_visitor_assignment($impression_key)) {
             return;
         }
 
-?>
-        <script>
-            // A/B Test tracking initialization
-            window.abTestTracking = {
-                visitorId: '<?php echo esc_js($this->get_visitor_id()); ?>',
-                trackConversion: function(campaignId, variationId, value) {
-                    if (typeof jQuery !== 'undefined') {
-                        jQuery.post('<?php echo admin_url("admin-ajax.php"); ?>', {
-                            action: 'pronto_ab_track',
-                            campaign_id: campaignId,
-                            variation_id: variationId,
-                            event_type: 'conversion',
-                            event_value: value || '',
-                            visitor_id: this.visitorId,
-                            nonce: '<?php echo wp_create_nonce("pronto_ab_track"); ?>'
-                        });
-                    }
-                }
-            };
-        </script>
-<?php
+        // Track the event
+        $visitor_id = $this->get_visitor_id();
+        $result = Pronto_AB_Analytics::track_event($campaign_id, $variation_id, 'impression', $visitor_id);
+
+        if ($result) {
+            // Mark as tracked (1 hour expiry to avoid session-long duplicates)
+            $this->set_visitor_assignment($impression_key, true, HOUR_IN_SECONDS);
+        }
+    }
+
+    /**
+     * Check if there are active campaigns (with caching)
+     */
+    private function has_active_campaigns()
+    {
+        $cache_key = 'pronto_ab_has_active_campaigns';
+        $has_campaigns = wp_cache_get($cache_key, 'pronto_ab');
+
+        if ($has_campaigns === false) {
+            global $wpdb;
+            $table = Pronto_AB_Database::get_campaigns_table();
+            $count = $wpdb->get_var("
+                SELECT COUNT(*) FROM $table 
+                WHERE status = 'active'
+                AND (start_date IS NULL OR start_date <= NOW())
+                AND (end_date IS NULL OR end_date >= NOW())
+            ");
+
+            $has_campaigns = $count > 0 ? 'yes' : 'no';
+            wp_cache_set($cache_key, $has_campaigns, 'pronto_ab', 300); // 5 minutes cache
+        }
+
+        return $has_campaigns === 'yes';
+    }
+
+    /**
+     * Render tracking script in head (moved to external JS file)
+     */
+    public function render_tracking_script()
+    {
+        // The tracking functionality is now handled by pronto-ab-public.js
+        // This method can be used for any additional inline tracking setup if needed
+
+        echo '<script>/* A/B Test tracking initialized via pronto-ab-public.js */</script>' . "\n";
     }
 
     /**
@@ -325,19 +391,43 @@ class Pronto_AB_Public
      */
     public function ajax_track_event()
     {
-        check_ajax_referer('pronto_ab_track', 'nonce');
+        // Verify nonce
+        if (!check_ajax_referer('pronto_ab_track', 'nonce', false)) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
 
-        $campaign_id = intval($_POST['campaign_id']);
-        $variation_id = intval($_POST['variation_id']);
-        $event_type = sanitize_text_field($_POST['event_type']);
-        $visitor_id = sanitize_text_field($_POST['visitor_id']);
+        // Sanitize input
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        $variation_id = intval($_POST['variation_id'] ?? 0);
+        $event_type = sanitize_text_field($_POST['event_type'] ?? '');
+        $visitor_id = sanitize_text_field($_POST['visitor_id'] ?? '');
         $event_value = sanitize_text_field($_POST['event_value'] ?? '');
 
+        // Validate required fields
+        if (!$campaign_id || !$variation_id || !$event_type || !$visitor_id) {
+            wp_send_json_error('Missing required fields');
+            return;
+        }
+
+        // Validate visitor ID matches
+        if ($visitor_id !== $this->get_visitor_id()) {
+            wp_send_json_error('Invalid visitor ID');
+            return;
+        }
+
+        // Prepare additional data
         $additional_data = array();
         if (!empty($event_value)) {
             $additional_data['value'] = $event_value;
         }
 
+        // Add referrer and user agent
+        $additional_data['referrer'] = $_SERVER['HTTP_REFERER'] ?? '';
+        $additional_data['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $additional_data['timestamp'] = current_time('mysql');
+
+        // Track the event
         $result = Pronto_AB_Analytics::track_event(
             $campaign_id,
             $variation_id,
@@ -347,7 +437,12 @@ class Pronto_AB_Public
         );
 
         if ($result) {
-            wp_send_json_success();
+            wp_send_json_success(array(
+                'message' => 'Event tracked successfully',
+                'event_type' => $event_type,
+                'campaign_id' => $campaign_id,
+                'variation_id' => $variation_id
+            ));
         } else {
             wp_send_json_error('Failed to track event');
         }
