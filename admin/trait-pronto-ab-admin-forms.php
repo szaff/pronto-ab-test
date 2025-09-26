@@ -152,18 +152,6 @@ trait Pronto_AB_Admin_Forms
     }
 
     /**
-     * Get URL for creating new variation
-     */
-    private function get_new_variation_url($campaign_id)
-    {
-        $url = admin_url('post-new.php?post_type=ab_variation');
-        if ($campaign_id) {
-            $url = add_query_arg('campaign_id', $campaign_id, $url);
-        }
-        return $url;
-    }
-
-    /**
      * Get variation preview URL
      */
     private function get_variation_preview_url($variation_id)
