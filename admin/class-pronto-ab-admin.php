@@ -14,7 +14,6 @@ require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-pages.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-forms.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-ajax.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-helpers.php';
-require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-gutenberg.php';
 
 class Pronto_AB_Admin
 {
@@ -22,7 +21,6 @@ class Pronto_AB_Admin
     use Pronto_AB_Admin_Forms;
     use Pronto_AB_Admin_Ajax;
     use Pronto_AB_Admin_Helpers;
-    use Pronto_AB_Admin_Gutenberg;
 
     /**
      * Constructor
@@ -45,14 +43,9 @@ class Pronto_AB_Admin
         // CRITICAL FIX: Load admin assets early to ensure dependencies
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'), 5);
 
-        // CRITICAL FIX: Load Gutenberg assets with proper priority
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_gutenberg_assets'), 10);
 
         // AJAX handlers - Enhanced set
         $this->register_ajax_handlers();
-
-        // REST API endpoints for Gutenberg
-        add_action('rest_api_init', array($this, 'register_gutenberg_endpoints'));
     }
 
     /**

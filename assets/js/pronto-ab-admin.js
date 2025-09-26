@@ -1,9 +1,9 @@
 /**
- * Pronto A/B Testing - Admin JavaScript
+ * Pronto A/B Testing - Admin JavaScript (Cleaned)
  *
  * Handles admin interface functionality including campaign management,
- * variation editing, and dynamic form interactions.
- * UPDATED FOR GUTENBERG BLOCK EDITOR INTEGRATION
+ * form validation, and basic admin interactions.
+ * Removed all Gutenberg/complex editor integrations.
  */
 
 (function ($) {
@@ -29,7 +29,6 @@
     },
 
     // State tracking
-    variationIndex: 0,
     isInitialized: false,
 
     /**
@@ -46,7 +45,6 @@
       this.initCampaignsList();
       this.initCampaignEditor();
       this.initPostTypeSelector();
-      this.initVariationEditor();
       this.initFormValidation();
       this.initBulkActions();
       this.initRealTimeStats();
@@ -200,402 +198,10 @@
     },
 
     /**
-     * Variation editor functionality - UPDATED FOR GUTENBERG
-     */
-    initVariationEditor: function () {
-      if (!$("#pronto-ab-variations").length) {
-        return;
-      }
-
-      // Set initial variation index
-      this.variationIndex = $(".pronto-ab-variation").length;
-
-      // Add variation button
-      $("#add-variation").on("click", function (e) {
-        e.preventDefault();
-        ProntoABAdmin.addVariation();
-      });
-
-      // Remove variation buttons (delegated)
-      $(document).on("click", ".remove-variation", function (e) {
-        e.preventDefault();
-        ProntoABAdmin.removeVariation($(this));
-      });
-
-      // Weight percentage validation
-      $(document).on("change", ".variation-weight", function () {
-        ProntoABAdmin.validateVariationWeights();
-      });
-
-      // Initialize sortable variations
-      this.initSortableVariations();
-
-      console.log("Variation editor initialized");
-    },
-
-    /**
-     * Add new variation - UPDATED FOR GUTENBERG
-     */
-    addVariation: function () {
-      const template = this.getVariationTemplate(this.variationIndex);
-      $("#pronto-ab-variations").append(template);
-
-      // Initialize components for new variation
-      this.initVariationComponents(this.variationIndex);
-
-      this.variationIndex++;
-
-      // Update variation weights
-      this.redistributeVariationWeights();
-
-      // Show animation
-      $(".pronto-ab-variation").last().hide().slideDown(300);
-
-      console.log("Added variation", this.variationIndex - 1);
-    },
-
-    /**
-     * Remove variation - UPDATED FOR GUTENBERG
-     */
-    removeVariation: function ($button) {
-      const $variation = $button.closest(".pronto-ab-variation");
-      const variationIndex = $variation.data("index");
-      const variationName =
-        $variation.find(".variation-name").val() || "Unnamed";
-
-      if (!confirm(`Are you sure you want to remove "${variationName}"?`)) {
-        return;
-      }
-
-      // Clean up Gutenberg editor if it exists
-      if (window.prontoABGutenbergManager && variationIndex !== undefined) {
-        window.prontoABGutenbergManager.destroyEditor(variationIndex);
-      }
-
-      $variation.slideUp(300, function () {
-        $(this).remove();
-        ProntoABAdmin.redistributeVariationWeights();
-        ProntoABAdmin.updateVariationIndexes();
-      });
-
-      console.log("Removed variation:", variationName);
-    },
-
-    /**
-     * Get variation template HTML - UPDATED FOR GUTENBERG
-     */
-    getVariationTemplate: function (index) {
-      return `
-                <div class="pronto-ab-variation" data-index="${index}">
-                    <div class="variation-header">
-                        <h4>
-                            <span class="variation-title">Variation ${String.fromCharCode(
-                              65 + index
-                            )}</span>
-                            <span class="variation-stats" style="display: none;">
-                                <small>0 impressions, 0 conversions (0%)</small>
-                            </span>
-                        </h4>
-                        <div class="variation-actions">
-                            <button type="button" class="button-link preview-variation" title="Preview">
-                                <span class="dashicons dashicons-visibility"></span>
-                            </button>
-                            <button type="button" class="button-link-delete remove-variation">
-                                ${this.config.strings.remove || "Remove"}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="variation-content">
-                        <input type="hidden" name="variations[${index}][id]" value="">
-                        <input type="hidden" name="variations[${index}][is_control]" value="0">
-                        <input type="hidden" name="variations[${index}][content]" 
-                               class="variation-content-input" value="">
-
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">
-                                    <label for="variation_name_${index}">Name</label>
-                                </th>
-                                <td>
-                                    <input type="text" id="variation_name_${index}" 
-                                           name="variations[${index}][name]" 
-                                           value="Variation ${String.fromCharCode(
-                                             65 + index
-                                           )}"
-                                           class="regular-text variation-name" required>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <label for="variation_editor_${index}">Content</label>
-                                </th>
-                                <td>
-                                    <!-- Gutenberg Editor Container -->
-                                    <div class="pronto-ab-gutenberg-editor" 
-                                         id="variation_editor_${index}"
-                                         data-variation-index="${index}"
-                                         data-initial-content="">
-                                        <div class="gutenberg-loading">
-                                            <div class="spinner is-active"></div>
-                                            <p>Loading block editor...</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Fallback textarea (hidden by default) -->
-                                    <div class="gutenberg-fallback" style="display: none;">
-                                        <textarea name="variations[${index}][content_fallback]"
-                                                 rows="8" class="large-text code"></textarea>
-                                        <p class="description">
-                                            Block editor could not be loaded. Using fallback editor.
-                                        </p>
-                                    </div>
-
-                                    <div class="gutenberg-editor-tools">
-                                        <button type="button" class="button preview-variation-content">
-                                            Preview Content
-                                        </button>
-                                        <button type="button" class="button save-blocks">
-                                            Save Blocks
-                                        </button>
-                                    </div>
-                                    
-                                    <p class="description">
-                                        Use the block editor to create rich content for this variation.
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <label for="variation_weight_${index}">Weight %</label>
-                                </th>
-                                <td>
-                                    <input type="number" id="variation_weight_${index}" 
-                                           name="variations[${index}][weight_percentage]"
-                                           value="50" min="0" max="100" step="0.01" 
-                                           class="small-text variation-weight">%
-                                    <div class="weight-slider" style="margin-top: 8px; width: 200px;"></div>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            `;
-    },
-
-    /**
-     * Initialize components for a new variation - UPDATED FOR GUTENBERG
-     */
-    initVariationComponents: function (index) {
-      const $variation = $(`.pronto-ab-variation[data-index="${index}"]`);
-
-      // Initialize weight slider
-      $variation.find(".weight-slider").slider({
-        min: 0,
-        max: 100,
-        value: 50,
-        step: 0.01,
-        slide: function (event, ui) {
-          $variation.find(".variation-weight").val(ui.value);
-        },
-      });
-
-      // Initialize preview button
-      $variation.find(".preview-variation").on("click", function () {
-        ProntoABAdmin.showVariationPreview(index);
-      });
-
-      // The Gutenberg editor will be initialized by the Gutenberg manager
-      // when it detects the new variation container
-    },
-
-    /**
-     * Show variation preview - UPDATED FOR GUTENBERG
-     */
-    showVariationPreview: function (index) {
-      let content = "";
-
-      // Try to get content from Gutenberg manager first
-      if (window.prontoABGutenbergManager) {
-        content = window.prontoABGutenbergManager.getEditorContent(index);
-      }
-
-      // Fallback to hidden input field
-      if (!content) {
-        const $variation = $(`.pronto-ab-variation[data-index="${index}"]`);
-        content = $variation.find(".variation-content-input").val();
-      }
-
-      if (!content || content.trim() === "") {
-        alert("No content to preview. Add some content first!");
-        return;
-      }
-
-      // Create preview modal
-      const modal = `
-        <div class="variation-preview-modal">
-          <div class="variation-preview-content">
-            <div class="variation-preview-header">
-              <h3>Variation Preview</h3>
-              <button type="button" class="variation-preview-close">&times;</button>
-            </div>
-            <div class="variation-preview-body">
-              ${content}
-            </div>
-          </div>
-        </div>
-      `;
-
-      $("body").append(modal);
-
-      // Close modal handlers
-      $(".variation-preview-close, .variation-preview-modal").on(
-        "click",
-        function (e) {
-          if (e.target === this) {
-            $(".variation-preview-modal").remove();
-          }
-        }
-      );
-
-      // ESC key to close
-      $(document).on("keydown.preview-modal", function (e) {
-        if (e.keyCode === 27) {
-          // ESC key
-          $(".variation-preview-modal").remove();
-          $(document).off("keydown.preview-modal");
-        }
-      });
-    },
-
-    /**
-     * Validate variation weights
-     */
-    validateVariationWeights: function () {
-      let totalWeight = 0;
-      $(".variation-weight").each(function () {
-        totalWeight += parseFloat($(this).val()) || 0;
-      });
-
-      const $indicator = $("#weight-total-indicator");
-      if ($indicator.length === 0) {
-        $("#add-variation").before(`
-                    <div id="weight-total-indicator" class="weight-indicator">
-                        Total weight: <span class="weight-value">${totalWeight.toFixed(
-                          1
-                        )}%</span>
-                    </div>
-                `);
-      } else {
-        $indicator.find(".weight-value").text(totalWeight.toFixed(1) + "%");
-      }
-
-      // Color coding
-      if (totalWeight < 99) {
-        $indicator
-          .removeClass("weight-over weight-perfect")
-          .addClass("weight-under");
-      } else if (totalWeight > 101) {
-        $indicator
-          .removeClass("weight-under weight-perfect")
-          .addClass("weight-over");
-      } else {
-        $indicator
-          .removeClass("weight-under weight-over")
-          .addClass("weight-perfect");
-      }
-    },
-
-    /**
-     * Redistribute variation weights evenly
-     */
-    redistributeVariationWeights: function () {
-      const $weights = $(".variation-weight");
-      const count = $weights.length;
-
-      if (count > 0) {
-        const evenWeight = (100 / count).toFixed(2);
-        $weights.val(evenWeight);
-        $weights.each(function () {
-          const index = $(this).closest(".pronto-ab-variation").data("index");
-          $(
-            `.pronto-ab-variation[data-index="${index}"] .weight-slider`
-          ).slider("value", evenWeight);
-        });
-      }
-
-      this.validateVariationWeights();
-    },
-
-    /**
-     * Update variation indexes after removal
-     */
-    updateVariationIndexes: function () {
-      $(".pronto-ab-variation").each(function (newIndex) {
-        const $variation = $(this);
-        const oldIndex = $variation.data("index");
-
-        if (oldIndex !== newIndex) {
-          // Update data attribute
-          $variation.attr("data-index", newIndex);
-
-          // Update all form field names and IDs
-          $variation
-            .find('[name*="variations[' + oldIndex + ']"]')
-            .each(function () {
-              const oldName = $(this).attr("name");
-              const newName = oldName.replace(
-                `variations[${oldIndex}]`,
-                `variations[${newIndex}]`
-              );
-              $(this).attr("name", newName);
-
-              if ($(this).attr("id")) {
-                const oldId = $(this).attr("id");
-                const newId = oldId.replace(`_${oldIndex}`, `_${newIndex}`);
-                $(this).attr("id", newId);
-              }
-            });
-
-          // Update labels
-          $variation.find('label[for*="_' + oldIndex + '"]').each(function () {
-            const oldFor = $(this).attr("for");
-            const newFor = oldFor.replace(`_${oldIndex}`, `_${newIndex}`);
-            $(this).attr("for", newFor);
-          });
-
-          // Update Gutenberg editor data attributes
-          $variation.find(".pronto-ab-gutenberg-editor").each(function () {
-            $(this).attr("data-variation-index", newIndex);
-            $(this).attr("id", `variation_editor_${newIndex}`);
-          });
-        }
-      });
-    },
-
-    /**
-     * Initialize sortable variations
-     */
-    initSortableVariations: function () {
-      $("#pronto-ab-variations").sortable({
-        handle: ".variation-header h4",
-        placeholder: "variation-placeholder",
-        stop: function () {
-          ProntoABAdmin.updateVariationIndexes();
-        },
-      });
-    },
-
-    /**
-     * Form validation - UPDATED FOR GUTENBERG
+     * Form validation
      */
     initFormValidation: function () {
       $("#pronto-ab-campaign-form").on("submit", function (e) {
-        // Sync all Gutenberg editors before validation
-        if (window.prontoABGutenbergManager) {
-          window.prontoABGutenbergManager.saveAllEditors();
-        }
-
         const errors = ProntoABAdmin.validateCampaignForm();
 
         if (errors.length > 0) {
@@ -615,21 +221,6 @@
       // Campaign name required
       if (!$("#campaign_name").val().trim()) {
         errors.push("Campaign name is required");
-      }
-
-      // At least one variation required
-      if ($(".pronto-ab-variation").length === 0) {
-        errors.push("At least one variation is required");
-      }
-
-      // Validate variation weights
-      let totalWeight = 0;
-      $(".variation-weight").each(function () {
-        totalWeight += parseFloat($(this).val()) || 0;
-      });
-
-      if (Math.abs(totalWeight - 100) > 1) {
-        errors.push("Total variation weights should equal 100%");
       }
 
       // Date validation
@@ -664,7 +255,7 @@
     },
 
     /**
-     * Auto-save functionality - UPDATED FOR GUTENBERG
+     * Auto-save functionality
      */
     initAutoSave: function () {
       let autoSaveTimer;
@@ -679,14 +270,9 @@
     },
 
     /**
-     * Auto-save campaign - UPDATED FOR GUTENBERG
+     * Auto-save campaign
      */
     autoSaveCampaign: function () {
-      // Sync all Gutenberg editors before auto-save
-      if (window.prontoABGutenbergManager) {
-        window.prontoABGutenbergManager.saveAllEditors();
-      }
-
       const $form = $("#pronto-ab-campaign-form");
       const formData =
         $form.serialize() +
@@ -816,7 +402,7 @@
      * Initialize campaign search
      */
     initCampaignSearch: function () {
-      const $searchInput = $("#campaign-search");
+      let $searchInput = $("#campaign-search");
       const $campaignRows = $(".pronto-ab-campaigns-table tbody tr");
 
       if (!$searchInput.length) {
@@ -998,7 +584,7 @@
     },
 
     /**
-     * Initialize change tracking - UPDATED FOR GUTENBERG
+     * Initialize change tracking
      */
     initChangeTracking: function () {
       const $form = $("#pronto-ab-campaign-form");
@@ -1006,11 +592,6 @@
       let hasChanges = false;
 
       $form.on("change input", function () {
-        // Sync Gutenberg editors before checking changes
-        if (window.prontoABGutenbergManager) {
-          window.prontoABGutenbergManager.saveAllEditors();
-        }
-
         hasChanges = $form.serialize() !== originalData;
 
         if (hasChanges) {
@@ -1032,6 +613,118 @@
         $(window).off("beforeunload");
       });
     },
+
+    /**
+     * Handle variation management actions
+     */
+    initVariationActions: function () {
+      // Handle variation weight changes
+      $(document).on("change input", ".weight-slider", function () {
+        const $slider = $(this);
+        const variationId = $slider.data("variation-id");
+        const weight = $slider.val();
+
+        // Update display
+        $slider
+          .closest(".variation-card")
+          .find(".weight-value")
+          .text(weight + "%");
+
+        // Debounced AJAX save
+        clearTimeout(this.weightSaveTimeout);
+        this.weightSaveTimeout = setTimeout(function () {
+          ProntoABAdmin.saveVariationWeight(variationId, weight);
+        }, 1000);
+      });
+
+      // Handle variation duplication
+      $(document).on("click", ".duplicate-variation", function (e) {
+        e.preventDefault();
+        const variationId = $(this).data("variation-id");
+        ProntoABAdmin.duplicateVariation(variationId);
+      });
+
+      // Handle variation deletion
+      $(document).on("click", ".delete-variation", function (e) {
+        e.preventDefault();
+        const variationId = $(this).data("variation-id");
+        const variationName = $(this).data("variation-name");
+
+        if (
+          confirm(
+            `Are you sure you want to delete the variation "${variationName}"?`
+          )
+        ) {
+          ProntoABAdmin.deleteVariation(variationId);
+        }
+      });
+    },
+
+    /**
+     * Save variation weight via AJAX
+     */
+    saveVariationWeight: function (variationId, weight) {
+      $.post(this.config.ajaxUrl, {
+        action: "pronto_ab_save_variation_weights",
+        weights: { [variationId]: weight },
+        nonce: this.config.nonce,
+      }).done(function (response) {
+        if (response.success) {
+          console.log("Weight saved successfully");
+        }
+      });
+    },
+
+    /**
+     * Duplicate variation via AJAX
+     */
+    duplicateVariation: function (variationId) {
+      $.post(this.config.ajaxUrl, {
+        action: "pronto_ab_duplicate_variation",
+        variation_id: variationId,
+        nonce: this.config.nonce,
+      })
+        .done(function (response) {
+          if (response.success) {
+            ProntoABAdmin.showNotice("success", response.data.message);
+            // Optionally reload or update the UI
+            setTimeout(() => location.reload(), 1000);
+          } else {
+            ProntoABAdmin.showNotice("error", response.data);
+          }
+        })
+        .fail(function () {
+          ProntoABAdmin.showNotice("error", "Failed to duplicate variation");
+        });
+    },
+
+    /**
+     * Delete variation via AJAX
+     */
+    deleteVariation: function (variationId) {
+      $.post(this.config.ajaxUrl, {
+        action: "pronto_ab_delete_variation",
+        variation_id: variationId,
+        nonce: this.config.nonce,
+      })
+        .done(function (response) {
+          if (response.success) {
+            ProntoABAdmin.showNotice("success", response.data.message);
+            // Remove the variation card from UI
+            $(`.variation-card[data-variation-id="${variationId}"]`).fadeOut(
+              300,
+              function () {
+                $(this).remove();
+              }
+            );
+          } else {
+            ProntoABAdmin.showNotice("error", response.data);
+          }
+        })
+        .fail(function () {
+          ProntoABAdmin.showNotice("error", "Failed to delete variation");
+        });
+    },
   };
 
   /**
@@ -1039,6 +732,7 @@
    */
   $(document).ready(function () {
     ProntoABAdmin.init();
+    ProntoABAdmin.initVariationActions();
   });
 
   // Make ProntoABAdmin globally available for debugging

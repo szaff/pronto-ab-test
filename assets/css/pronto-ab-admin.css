@@ -1,92 +1,34 @@
-/* Variation Editor Styles */
-.pronto-ab-variation {
-  border: 1px solid #ddd;
-  margin-bottom: 20px;
-  background: #fff;
+/**
+ * Pronto A/B Testing - Admin CSS (Cleaned)
+ * 
+ * Styles for campaign management interface.
+ * Removed all Gutenberg/complex editor related styles.
+ */
+
+/* ===========================
+   CAMPAIGN FORM STYLES
+   =========================== */
+
+/* Form States */
+.button-primary.unsaved-changes {
+  background: #e65100 !important;
+  border-color: #bf360c !important;
+  animation: pulse 2s infinite;
 }
 
-.variation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f9f9f9;
-  border-bottom: 1px solid #ddd;
-  cursor: move;
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
-.variation-actions .button-link {
-  margin-left: 8px;
-  color: #666;
-}
-
-.variation-actions .button-link:hover {
-  color: #000;
-}
-
-.variation-content {
-  padding: 16px;
-}
-
-/* Editor Tabs */
-.editor-tabs {
-  display: flex;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 12px;
-}
-
-.editor-tab {
-  padding: 8px 16px;
-  background: #f1f1f1;
-  border: none;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-
-.editor-tab.active {
-  background: #fff;
-  border-bottom-color: #0073aa;
-}
-
-.editor-panel {
-  display: none;
-}
-
-.editor-panel.active {
-  display: block;
-}
-
-.variation-preview {
-  min-height: 100px;
-  padding: 12px;
-  border: 1px solid #ddd;
-  background: #f9f9f9;
-}
-
-/* Weight Indicator */
-.weight-indicator {
-  margin: 10px 0;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-.weight-indicator.weight-under {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
-
-.weight-indicator.weight-over {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.weight-indicator.weight-perfect {
-  background: #d1edff;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+.invalid {
+  border-color: #dc3232 !important;
+  box-shadow: 0 0 2px rgba(220, 50, 50, 0.8);
 }
 
 /* Traffic Split Visualizer */
@@ -125,40 +67,9 @@
   background: #826eb4;
 }
 
-/* Form States */
-.button-primary.unsaved-changes {
-  background: #e65100 !important;
-  border-color: #bf360c !important;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.invalid {
-  border-color: #dc3232 !important;
-  box-shadow: 0 0 2px rgba(220, 50, 50, 0.8);
-}
-
-/* Sortable States */
-.variation-placeholder {
-  height: 100px;
-  background: #f0f0f0;
-  border: 2px dashed #ddd;
-  margin-bottom: 20px;
-}
-
-.ui-sortable-helper {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  transform: rotate(2deg);
-}
+/* ===========================
+   CAMPAIGN LIST STYLES
+   =========================== */
 
 /* Search and Bulk Actions */
 #campaign-search {
@@ -170,536 +81,107 @@
   margin-right: 5px;
 }
 
+/* Campaign Table Enhancements */
+.campaigns-table .campaign-title {
+  font-weight: 600;
+}
+
+.campaigns-table .campaign-description {
+  color: #666;
+  font-style: italic;
+}
+
+.campaigns-table .status-active {
+  color: #00a32a;
+  font-weight: bold;
+}
+
+.campaigns-table .status-draft {
+  color: #dba617;
+  font-weight: bold;
+}
+
+.campaigns-table .status-paused {
+  color: #d63638;
+  font-weight: bold;
+}
+
+.campaigns-table .status-completed {
+  color: #50575e;
+  font-weight: bold;
+}
+
+/* ===========================
+   STATISTICS STYLES
+   =========================== */
+
 /* Real-time Stats */
-.stat-item {
-  display: inline-block;
-  margin-right: 20px;
-  padding: 8px 12px;
-  background: #f0f0f0;
+.pronto-ab-stats {
+  background: #fff;
+  border: 1px solid #ddd;
   border-radius: 4px;
+  padding: 16px;
+}
+
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
 }
 
 .stat-item strong {
   display: block;
-  font-size: 18px;
+  font-size: 24px;
   color: #0073aa;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-item span {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .variation-stat {
   margin: 8px 0;
-  padding: 8px;
+  padding: 12px;
   background: #f9f9f9;
   border-left: 3px solid #0073aa;
+  border-radius: 0 4px 4px 0;
 }
 
-/* WordPress Editor Integration */
-.variation-wp-editor {
-  margin: 8px 0;
+.variation-stat strong {
+  color: #0073aa;
+  font-weight: 600;
 }
 
-.variation-wp-editor .wp-editor-wrap {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.variation-wp-editor .wp-editor-container {
-  background: #fff;
-}
-
-.variation-wp-editor .wp-editor-area {
-  color: #32373c;
-}
-
-.variation-wp-editor .mce-toolbar-grp {
-  border-bottom: 1px solid #ddd;
-  background: #f5f5f5;
-}
-
-.variation-wp-editor .quicktags-toolbar {
-  border-bottom: 1px solid #ddd;
-  background: #f5f5f5;
-  padding: 4px;
-}
-
-/* Editor tools */
-.variation-editor-tools {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #ddd;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.variation-editor-tools .button {
-  height: auto;
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-/* Loading state */
-.editor-loading {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.editor-loading .spinner {
-  float: none;
-  margin: 0 8px 0 0;
-}
-
-/* Preview Modal */
-.variation-preview-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 1000001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.variation-preview-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  max-width: 80vw;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.variation-preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ddd;
-}
-
-.variation-preview-header h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.variation-preview-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  color: #666;
-}
-
-.variation-preview-close:hover {
-  background: #f0f0f0;
-  color: #000;
-}
-
-.variation-preview-body {
-  line-height: 1.6;
-}
-
-.variation-preview-body h1,
-.variation-preview-body h2,
-.variation-preview-body h3,
-.variation-preview-body h4,
-.variation-preview-body h5,
-.variation-preview-body h6 {
-  margin-top: 0;
-}
-
-.variation-preview-body p:last-child {
-  margin-bottom: 0;
-}
-
-/* Enhanced variation styling */
-.pronto-ab-variation .wp-editor-wrap {
-  max-width: none;
-}
-
-.pronto-ab-variation .wp-editor-tools {
-  border-bottom: 1px solid #ddd;
-  background: #f5f5f5;
-}
-
-/* TinyMCE specific adjustments */
-.pronto-ab-variation .mce-edit-area {
-  border: none;
-}
-
-.pronto-ab-variation .mce-statusbar {
-  border-top: 1px solid #ddd;
-}
-
-/* QuickTags adjustments */
-.pronto-ab-variation .quicktags-toolbar input {
-  margin: 2px;
-  font-size: 12px;
-}
-
-/* Responsive design */
-@media (max-width: 782px) {
-  .variation-editor-tools {
-    flex-wrap: wrap;
-  }
-
-  .variation-preview-content {
-    padding: 15px;
-    max-width: 95vw;
-    max-height: 95vh;
-  }
-
-  .variation-preview-header h3 {
-    font-size: 16px;
-  }
-}
-
-/* Integration with existing variation styles */
-.pronto-ab-variation .variation-wp-editor {
-  margin: 0;
-}
-
-.pronto-ab-variation .variation-content .variation-wp-editor {
-  margin-top: 8px;
-}
-
-/* Ensure proper editor sizing */
-.pronto-ab-variation .wp-editor-wrap .wp-editor-container textarea {
-  resize: vertical;
-  min-height: 200px;
-}
-
-/* Loading state improvements */
-.pronto-ab-variation.is-loading .variation-wp-editor {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-/* Success states */
-.variation-saved-indicator {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #00a32a;
+.control-badge {
+  background: #0073aa;
   color: white;
-  padding: 4px 8px;
-  border-radius: 2px;
-  font-size: 12px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.variation-saved-indicator.show {
-  opacity: 1;
-}
-
-/* Auto-save indicator */
-.auto-save-status {
-  font-size: 12px;
-  color: #666;
-  margin-left: auto;
-}
-
-.auto-save-status.saving {
-  color: #007cba;
-}
-
-.auto-save-status.saved {
-  color: #00a32a;
-}
-
-/* Enhanced fallback editor styling */
-.gutenberg-fallback {
-  margin-top: 8px;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #f9f9f9;
-}
-
-.fallback-header {
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-.fallback-header strong {
-  color: #d63638;
-}
-
-.fallback-header small {
-  color: #666;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-left: 8px;
 }
 
-.gutenberg-fallback textarea {
-  width: 100%;
-  font-family: Consolas, Monaco, monospace;
-  font-size: 13px;
-  line-height: 1.4;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 12px;
-  background: #fff;
-}
+/* ===========================
+   VARIATION CARDS STYLES
+   =========================== */
 
-.fallback-tools {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.fallback-tools .button {
-  height: auto;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.html-help {
-  margin-top: 8px;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 2px;
-  font-size: 12px;
-}
-
-.html-help code {
-  display: block;
-  margin: 2px 0;
-  padding: 2px 4px;
-  background: #f0f0f0;
-  border-radius: 2px;
-}
-
-/* Enhanced loading state with better error messages */
-.gutenberg-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.gutenberg-loading .spinner {
-  margin-bottom: 12px;
-}
-
-.gutenberg-loading p {
-  margin: 4px 0;
-  color: #666;
-}
-
-.gutenberg-loading ul {
-  text-align: left;
-  max-width: 300px;
-  margin: 12px auto;
-}
-
-.gutenberg-loading small {
-  color: #999;
-  font-style: italic;
-}
-
-/* Error states */
-.pronto-ab-gutenberg-editor.is-error .gutenberg-loading {
-  border-color: #dc3232;
-  background: #fcf0f1;
-}
-
-.pronto-ab-gutenberg-editor.is-error .gutenberg-loading p {
-  color: #721c24;
-}
-
-/* Success states */
-.pronto-ab-gutenberg-editor.is-loaded .gutenberg-loading {
-  display: none;
-}
-
-.pronto-ab-gutenberg-editor.is-loaded .pronto-ab-gutenberg-content {
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
-
-/* Enhanced debug information */
-.debug-panel {
-  position: fixed;
-  top: 32px;
-  right: 20px;
-  width: 300px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 999999;
-  font-size: 12px;
-}
-
-.debug-panel-header {
-  padding: 8px 12px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #ddd;
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.debug-panel-content {
-  padding: 12px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.debug-panel-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.debug-item {
-  margin: 4px 0;
-  padding: 4px;
-  border-radius: 2px;
-}
-
-.debug-item.debug-success {
-  background: #d1edff;
-  color: #0c5460;
-}
-
-.debug-item.debug-warning {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.debug-item.debug-error {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-/* Responsive improvements */
-@media (max-width: 782px) {
-  .debug-panel {
-    position: relative;
-    top: auto;
-    right: auto;
-    width: 100%;
-    margin: 20px 0;
-  }
-
-  .fallback-tools {
-    flex-wrap: wrap;
-  }
-
-  .gutenberg-editor-tools {
-    flex-wrap: wrap;
-  }
-}
-
-/* Integration improvements */
-.pronto-ab-variation .gutenberg-fallback {
-  margin: 0;
-}
-
-.pronto-ab-variation .variation-content .gutenberg-fallback {
-  margin-top: 8px;
-}
-
-/* Auto-save indicator improvements */
-.gutenberg-auto-save-indicator {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 11px;
-  color: #666;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 3px 6px;
-  border-radius: 2px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 10;
-}
-
-.gutenberg-auto-save-indicator.is-saving {
-  opacity: 1;
-  color: #007cba;
-}
-
-.gutenberg-auto-save-indicator.is-saved {
-  opacity: 1;
-  color: #00a32a;
-}
-
-.gutenberg-auto-save-indicator.is-error {
-  opacity: 1;
-  color: #dc3232;
-}
-
-/* Loading skeleton for better UX */
-.gutenberg-skeleton {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.gutenberg-skeleton-line {
-  height: 16px;
-  background: #e0e0e0;
-  border-radius: 2px;
-  margin: 8px 0;
-}
-
-.gutenberg-skeleton-line:nth-child(1) {
-  width: 80%;
-}
-.gutenberg-skeleton-line:nth-child(2) {
-  width: 60%;
-}
-.gutenberg-skeleton-line:nth-child(3) {
-  width: 90%;
-}
-.gutenberg-skeleton-line:nth-child(4) {
-  width: 70%;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-/* Add this to your assets/css/pronto-ab-admin.css */
-
-/* Variation Cards Styling */
 .variations-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -745,17 +227,6 @@
 
 .variation-title a:hover {
   color: #005a87;
-}
-
-.control-badge {
-  background: #0073aa;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .variation-actions {
@@ -834,25 +305,6 @@
   border-radius: 4px;
 }
 
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-
-.stat-item strong {
-  display: block;
-  font-size: 18px;
-  color: #0073aa;
-  font-weight: 700;
-}
-
-.stat-item span {
-  font-size: 11px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .variation-stats-empty {
   margin-bottom: 16px;
   padding: 12px;
@@ -860,143 +312,3 @@
   border-radius: 4px;
   color: #666;
   font-style: italic;
-  text-align: center;
-}
-
-.variation-content-preview {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-}
-
-.variation-content-preview label {
-  display: block;
-  font-weight: 600;
-  font-size: 12px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.content-preview {
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1.4;
-  color: #555;
-  max-height: 60px;
-  overflow: hidden;
-  position: relative;
-}
-
-.content-preview:after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(transparent, #f8f9fa);
-}
-
-/* Empty state */
-.pronto-ab-empty-variations {
-  text-align: center;
-  padding: 40px 20px;
-  background: #f8f9fa;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-
-.pronto-ab-empty-variations h4 {
-  margin: 0 0 8px;
-  color: #666;
-}
-
-.pronto-ab-empty-variations p {
-  margin: 0;
-  color: #999;
-}
-
-/* Variation controls */
-.variation-controls {
-  margin: 20px 0;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.variation-controls .button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.variation-controls .button .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-}
-
-/* Help section */
-.variations-help {
-  margin-top: 24px;
-  padding: 16px;
-  background: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 4px;
-}
-
-.variations-help h4 {
-  margin: 0 0 12px;
-  color: #0073aa;
-}
-
-.variations-help ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.variations-help li {
-  margin-bottom: 4px;
-  color: #666;
-  line-height: 1.4;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .variations-list {
-    grid-template-columns: 1fr;
-  }
-
-  .variation-card-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .variation-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .variation-meta {
-    grid-template-columns: 1fr;
-  }
-
-  .variation-stats {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .variation-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
