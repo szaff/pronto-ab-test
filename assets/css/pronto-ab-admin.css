@@ -191,3 +191,712 @@
   background: #f9f9f9;
   border-left: 3px solid #0073aa;
 }
+
+/* WordPress Editor Integration */
+.variation-wp-editor {
+  margin: 8px 0;
+}
+
+.variation-wp-editor .wp-editor-wrap {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.variation-wp-editor .wp-editor-container {
+  background: #fff;
+}
+
+.variation-wp-editor .wp-editor-area {
+  color: #32373c;
+}
+
+.variation-wp-editor .mce-toolbar-grp {
+  border-bottom: 1px solid #ddd;
+  background: #f5f5f5;
+}
+
+.variation-wp-editor .quicktags-toolbar {
+  border-bottom: 1px solid #ddd;
+  background: #f5f5f5;
+  padding: 4px;
+}
+
+/* Editor tools */
+.variation-editor-tools {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.variation-editor-tools .button {
+  height: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Loading state */
+.editor-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.editor-loading .spinner {
+  float: none;
+  margin: 0 8px 0 0;
+}
+
+/* Preview Modal */
+.variation-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.variation-preview-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.variation-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.variation-preview-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.variation-preview-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  color: #666;
+}
+
+.variation-preview-close:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+.variation-preview-body {
+  line-height: 1.6;
+}
+
+.variation-preview-body h1,
+.variation-preview-body h2,
+.variation-preview-body h3,
+.variation-preview-body h4,
+.variation-preview-body h5,
+.variation-preview-body h6 {
+  margin-top: 0;
+}
+
+.variation-preview-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Enhanced variation styling */
+.pronto-ab-variation .wp-editor-wrap {
+  max-width: none;
+}
+
+.pronto-ab-variation .wp-editor-tools {
+  border-bottom: 1px solid #ddd;
+  background: #f5f5f5;
+}
+
+/* TinyMCE specific adjustments */
+.pronto-ab-variation .mce-edit-area {
+  border: none;
+}
+
+.pronto-ab-variation .mce-statusbar {
+  border-top: 1px solid #ddd;
+}
+
+/* QuickTags adjustments */
+.pronto-ab-variation .quicktags-toolbar input {
+  margin: 2px;
+  font-size: 12px;
+}
+
+/* Responsive design */
+@media (max-width: 782px) {
+  .variation-editor-tools {
+    flex-wrap: wrap;
+  }
+
+  .variation-preview-content {
+    padding: 15px;
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .variation-preview-header h3 {
+    font-size: 16px;
+  }
+}
+
+/* Integration with existing variation styles */
+.pronto-ab-variation .variation-wp-editor {
+  margin: 0;
+}
+
+.pronto-ab-variation .variation-content .variation-wp-editor {
+  margin-top: 8px;
+}
+
+/* Ensure proper editor sizing */
+.pronto-ab-variation .wp-editor-wrap .wp-editor-container textarea {
+  resize: vertical;
+  min-height: 200px;
+}
+
+/* Loading state improvements */
+.pronto-ab-variation.is-loading .variation-wp-editor {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Success states */
+.variation-saved-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #00a32a;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 2px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.variation-saved-indicator.show {
+  opacity: 1;
+}
+
+/* Auto-save indicator */
+.auto-save-status {
+  font-size: 12px;
+  color: #666;
+  margin-left: auto;
+}
+
+.auto-save-status.saving {
+  color: #007cba;
+}
+
+.auto-save-status.saved {
+  color: #00a32a;
+}
+
+/* Gutenberg Block Editor Integration Styles
+   Add these to your assets/css/pronto-ab-admin.css */
+
+/* Main Gutenberg editor container */
+.pronto-ab-gutenberg-editor {
+  margin: 8px 0;
+  position: relative;
+  min-height: 300px;
+}
+
+/* Loading state */
+.gutenberg-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.gutenberg-loading .spinner {
+  margin-bottom: 12px;
+}
+
+/* Gutenberg editor content area */
+.pronto-ab-gutenberg-content {
+  border: 1px solid #ddd !important;
+  border-radius: 4px;
+  background: #fff;
+  min-height: 300px;
+  position: relative;
+}
+
+.pronto-ab-gutenberg-content:focus-within {
+  border-color: #007cba !important;
+  box-shadow: 0 0 0 1px #007cba;
+}
+
+/* Block list styling */
+.pronto-ab-variation-blocks {
+  max-width: none;
+}
+
+.pronto-ab-variation-blocks .wp-block {
+  max-width: none;
+}
+
+/* Toolbar styling */
+.pronto-ab-gutenberg-editor .block-editor-block-toolbar {
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.pronto-ab-gutenberg-editor .components-toolbar {
+  background: #fff;
+  border: none;
+}
+
+.pronto-ab-gutenberg-editor .components-toolbar-group {
+  border: none;
+  background: transparent;
+}
+
+.pronto-ab-gutenberg-editor .components-toolbar-button {
+  color: #1e1e1e;
+}
+
+.pronto-ab-gutenberg-editor .components-toolbar-button:hover:not(:disabled) {
+  background: #f0f0f0;
+  color: #1e1e1e;
+}
+
+/* Block selection */
+.pronto-ab-gutenberg-editor .wp-block.is-selected {
+  outline: 1px solid #007cba;
+  outline-offset: -1px;
+}
+
+/* Block hover */
+.pronto-ab-gutenberg-editor .wp-block:hover {
+  outline: 1px solid rgba(0, 124, 186, 0.5);
+  outline-offset: -1px;
+}
+
+/* Inserter button */
+.pronto-ab-gutenberg-editor .block-editor-button-block-appender {
+  background: #f0f0f0;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  color: #757575;
+  width: 100%;
+  min-height: 40px;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-button-block-appender:hover {
+  background: #e0e0e0;
+  border-color: #999;
+  color: #1e1e1e;
+}
+
+/* Block editor tools */
+.gutenberg-editor-tools {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.gutenberg-editor-tools .button {
+  height: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Fallback editor styling */
+.gutenberg-fallback {
+  margin-top: 8px;
+}
+
+.gutenberg-fallback textarea {
+  width: 100%;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+/* Popover positioning */
+.pronto-ab-gutenberg-editor .components-popover__content {
+  z-index: 1000001;
+}
+
+.pronto-ab-gutenberg-editor .components-modal__screen-overlay {
+  z-index: 1000001;
+}
+
+/* Block inserter panel */
+.pronto-ab-gutenberg-editor .block-editor-inserter__panel {
+  max-height: 400px;
+  width: 350px;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-inserter__search {
+  margin: 16px;
+  margin-bottom: 0;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-inserter__results {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Block patterns panel */
+.pronto-ab-gutenberg-editor .block-editor-inserter__panel-content {
+  height: auto;
+  max-height: 400px;
+}
+
+/* Block-specific styling adjustments */
+.pronto-ab-gutenberg-editor .wp-block-paragraph {
+  margin: 0 0 1em 0;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-heading {
+  margin: 0.5em 0;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-list {
+  margin: 0 0 1em 0;
+  padding-left: 1.3em;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-button {
+  margin-bottom: 0;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-buttons {
+  margin: 0 0 1em 0;
+}
+
+/* Columns block styling */
+.pronto-ab-gutenberg-editor .wp-block-columns {
+  margin: 0 0 1em 0;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-column {
+  flex-basis: 0;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* Image block styling */
+.pronto-ab-gutenberg-editor .wp-block-image {
+  margin: 0 0 1em 0;
+  text-align: center;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-image img {
+  height: auto;
+  max-width: 100%;
+}
+
+/* Media and text block */
+.pronto-ab-gutenberg-editor .wp-block-media-text {
+  margin: 0 0 1em 0;
+}
+
+/* Group block */
+.pronto-ab-gutenberg-editor .wp-block-group {
+  margin: 0 0 1em 0;
+}
+
+/* Cover block */
+.pronto-ab-gutenberg-editor .wp-block-cover {
+  margin: 0 0 1em 0;
+  min-height: 200px;
+}
+
+/* Separator block */
+.pronto-ab-gutenberg-editor .wp-block-separator {
+  margin: 1.5em auto;
+  border: none;
+  border-top: 1px solid #ddd;
+  max-width: 100px;
+}
+
+/* Spacer block */
+.pronto-ab-gutenberg-editor .wp-block-spacer {
+  clear: both;
+}
+
+/* Quote block */
+.pronto-ab-gutenberg-editor .wp-block-quote {
+  margin: 0 0 1em 0;
+  padding-left: 1em;
+  border-left: 4px solid #ddd;
+  font-style: italic;
+}
+
+/* Code block */
+.pronto-ab-gutenberg-editor .wp-block-code {
+  margin: 0 0 1em 0;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 14px;
+  overflow-x: auto;
+}
+
+/* Table block */
+.pronto-ab-gutenberg-editor .wp-block-table {
+  margin: 0 0 1em 0;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-table table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.pronto-ab-gutenberg-editor .wp-block-table td,
+.pronto-ab-gutenberg-editor .wp-block-table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+/* Responsive design */
+@media (max-width: 782px) {
+  .pronto-ab-gutenberg-content {
+    padding: 12px;
+    min-height: 250px;
+  }
+
+  .gutenberg-editor-tools {
+    flex-wrap: wrap;
+  }
+
+  .pronto-ab-gutenberg-editor .components-toolbar-button {
+    min-width: 44px;
+    height: 44px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pronto-ab-gutenberg-content {
+    background: #1e1e1e;
+    border-color: #3c3c3c !important;
+    color: #fff;
+  }
+
+  .gutenberg-loading {
+    background: #1e1e1e;
+    border-color: #3c3c3c;
+    color: #fff;
+  }
+
+  .pronto-ab-gutenberg-editor .components-toolbar {
+    background: #2c2c2c;
+  }
+
+  .pronto-ab-gutenberg-editor .components-toolbar-button {
+    color: #fff;
+  }
+
+  .pronto-ab-gutenberg-editor .components-toolbar-button:hover:not(:disabled) {
+    background: #3c3c3c;
+  }
+}
+
+/* Integration with existing variation styles */
+.pronto-ab-variation .pronto-ab-gutenberg-editor {
+  margin: 0;
+}
+
+.pronto-ab-variation .variation-content .pronto-ab-gutenberg-editor {
+  margin-top: 8px;
+}
+
+/* Loading and error states */
+.pronto-ab-gutenberg-editor.is-loading .pronto-ab-gutenberg-content {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.pronto-ab-gutenberg-editor.is-error .pronto-ab-gutenberg-content {
+  border-color: #dc3232 !important;
+  background: #fcf0f1;
+}
+
+/* Auto-save indicator for Gutenberg */
+.gutenberg-auto-save-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  color: #666;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gutenberg-auto-save-indicator.is-saving {
+  opacity: 1;
+  color: #007cba;
+}
+
+.gutenberg-auto-save-indicator.is-saved {
+  opacity: 1;
+  color: #00a32a;
+}
+
+/* Block validation errors */
+.pronto-ab-gutenberg-editor .block-editor-warning {
+  background: #fcf9e8;
+  border: 1px solid #dba617;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-warning__message {
+  font-size: 14px;
+  color: #8a6914;
+}
+
+/* Block breadcrumb navigation */
+.pronto-ab-gutenberg-editor .block-editor-block-breadcrumb {
+  font-size: 12px;
+  color: #666;
+  padding: 4px 8px;
+  background: #f0f0f0;
+  border-radius: 2px;
+  margin: 8px 0;
+}
+
+/* Ensure block widths work properly */
+.pronto-ab-gutenberg-editor .wp-block[data-align="wide"],
+.pronto-ab-gutenberg-editor .wp-block[data-align="full"] {
+  width: 100%;
+  max-width: none;
+}
+
+/* Pattern inserter adjustments */
+.pronto-ab-gutenberg-editor .block-editor-inserter__patterns {
+  padding: 16px;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-block-patterns-list__item {
+  margin-bottom: 16px;
+}
+
+/* Reusable blocks panel */
+.pronto-ab-gutenberg-editor .block-editor-inserter__reusable-blocks-panel {
+  padding: 16px;
+}
+
+/* Format library toolbar */
+.pronto-ab-gutenberg-editor .block-editor-format-toolbar {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Rich text formatting */
+.pronto-ab-gutenberg-editor .rich-text:focus {
+  outline: none;
+}
+
+/* Block mover buttons */
+.pronto-ab-gutenberg-editor .block-editor-block-mover {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-block-mover-button {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+}
+
+.pronto-ab-gutenberg-editor
+  .block-editor-block-mover-button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+/* Drag and drop zones */
+.pronto-ab-gutenberg-editor .block-editor-block-drop-zone {
+  border: 2px dashed #007cba;
+  background: rgba(0, 124, 186, 0.1);
+  border-radius: 4px;
+}
+
+.pronto-ab-gutenberg-editor .block-editor-block-drop-zone.is-active {
+  border-color: #00a32a;
+  background: rgba(0, 163, 42, 0.1);
+}
+
+/* Block alignment controls */
+.pronto-ab-gutenberg-editor .block-editor-block-alignment-matrix-control {
+  border: 1px solid #ddd;
+  border-radius: 2px;
+}
+
+/* Media placeholder styling */
+.pronto-ab-gutenberg-editor .components-placeholder {
+  background: #f8f9fa;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+.pronto-ab-gutenberg-editor .components-placeholder:hover {
+  border-color: #007cba;
+}
+
+/* Ensure proper spacing between variations */
+.pronto-ab-variation + .pronto-ab-variation .pronto-ab-gutenberg-editor {
+  margin-top: 0;
+}

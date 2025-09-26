@@ -33,6 +33,7 @@ define('PAB_PUBLIC_DIR', PAB_PLUGIN_DIR . 'public/');
 define('PAB_TEMPLATES_DIR', PAB_PLUGIN_DIR . 'templates/');
 define('PAB_ASSETS_URL', PAB_PLUGIN_URL . 'assets/');
 
+
 /**
  * Main Plugin Class
  * 
@@ -404,14 +405,14 @@ class Pronto_AB
 
         wp_enqueue_style(
             'pronto-ab-admin',
-            PAB_ASSETS_URL . 'css/admin.css',
+            PAB_ASSETS_URL . 'css/pronto-ab-admin.css',
             array(),
             PAB_VERSION
         );
 
         wp_enqueue_script(
             'pronto-ab-admin',
-            PAB_ASSETS_URL . 'js/admin.js',
+            PAB_ASSETS_URL . 'js/pronto-ab-admin.js',
             array('jquery'),
             PAB_VERSION,
             true

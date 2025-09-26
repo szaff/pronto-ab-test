@@ -3,6 +3,7 @@
  *
  * Handles admin interface functionality including campaign management,
  * variation editing, and dynamic form interactions.
+ * UPDATED FOR GUTENBERG BLOCK EDITOR INTEGRATION
  */
 
 (function ($) {
@@ -10,8 +11,8 @@
 
   // Check if abTestAjax is available (localized from PHP)
   if (typeof abTestAjax === "undefined") {
-    console.warn(
-      "Pronto A/B Admin: abTestAjax not found. Admin functionality may be limited."
+    console.info(
+      "Pronto A/B Admin: Not on a campaign page, skipping admin JavaScript initialization."
     );
     return;
   }
@@ -199,7 +200,7 @@
     },
 
     /**
-     * Variation editor functionality
+     * Variation editor functionality - UPDATED FOR GUTENBERG
      */
     initVariationEditor: function () {
       if (!$("#pronto-ab-variations").length) {
@@ -221,11 +222,6 @@
         ProntoABAdmin.removeVariation($(this));
       });
 
-      // Variation content preview
-      $(document).on("change", ".variation-content", function () {
-        ProntoABAdmin.updateVariationPreview($(this));
-      });
-
       // Weight percentage validation
       $(document).on("change", ".variation-weight", function () {
         ProntoABAdmin.validateVariationWeights();
@@ -238,7 +234,7 @@
     },
 
     /**
-     * Add new variation
+     * Add new variation - UPDATED FOR GUTENBERG
      */
     addVariation: function () {
       const template = this.getVariationTemplate(this.variationIndex);
@@ -259,15 +255,21 @@
     },
 
     /**
-     * Remove variation
+     * Remove variation - UPDATED FOR GUTENBERG
      */
     removeVariation: function ($button) {
       const $variation = $button.closest(".pronto-ab-variation");
+      const variationIndex = $variation.data("index");
       const variationName =
         $variation.find(".variation-name").val() || "Unnamed";
 
       if (!confirm(`Are you sure you want to remove "${variationName}"?`)) {
         return;
+      }
+
+      // Clean up Gutenberg editor if it exists
+      if (window.prontoABGutenbergManager && variationIndex !== undefined) {
+        window.prontoABGutenbergManager.destroyEditor(variationIndex);
       }
 
       $variation.slideUp(300, function () {
@@ -280,7 +282,7 @@
     },
 
     /**
-     * Get variation template HTML
+     * Get variation template HTML - UPDATED FOR GUTENBERG
      */
     getVariationTemplate: function (index) {
       return `
@@ -307,6 +309,8 @@
                     <div class="variation-content">
                         <input type="hidden" name="variations[${index}][id]" value="">
                         <input type="hidden" name="variations[${index}][is_control]" value="0">
+                        <input type="hidden" name="variations[${index}][content]" 
+                               class="variation-content-input" value="">
 
                         <table class="form-table">
                             <tr>
@@ -324,29 +328,40 @@
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <label for="variation_content_${index}">Content</label>
+                                    <label for="variation_editor_${index}">Content</label>
                                 </th>
                                 <td>
-                                    <div class="variation-content-editor">
-                                        <div class="editor-tabs">
-                                            <button type="button" class="editor-tab active" data-tab="html">HTML</button>
-                                            <button type="button" class="editor-tab" data-tab="preview">Preview</button>
-                                        </div>
-                                        <div class="editor-content">
-                                            <div class="editor-panel active" data-panel="html">
-                                                <textarea id="variation_content_${index}" 
-                                                         name="variations[${index}][content]"
-                                                         rows="8" class="large-text code variation-content"></textarea>
-                                            </div>
-                                            <div class="editor-panel" data-panel="preview">
-                                                <div class="variation-preview" id="preview_${index}">
-                                                    <em>Enter content above to see preview</em>
-                                                </div>
-                                            </div>
+                                    <!-- Gutenberg Editor Container -->
+                                    <div class="pronto-ab-gutenberg-editor" 
+                                         id="variation_editor_${index}"
+                                         data-variation-index="${index}"
+                                         data-initial-content="">
+                                        <div class="gutenberg-loading">
+                                            <div class="spinner is-active"></div>
+                                            <p>Loading block editor...</p>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Fallback textarea (hidden by default) -->
+                                    <div class="gutenberg-fallback" style="display: none;">
+                                        <textarea name="variations[${index}][content_fallback]"
+                                                 rows="8" class="large-text code"></textarea>
+                                        <p class="description">
+                                            Block editor could not be loaded. Using fallback editor.
+                                        </p>
+                                    </div>
+
+                                    <div class="gutenberg-editor-tools">
+                                        <button type="button" class="button preview-variation-content">
+                                            Preview Content
+                                        </button>
+                                        <button type="button" class="button save-blocks">
+                                            Save Blocks
+                                        </button>
+                                    </div>
+                                    
                                     <p class="description">
-                                        HTML content for this variation. This will replace the target content.
+                                        Use the block editor to create rich content for this variation.
                                     </p>
                                 </td>
                             </tr>
@@ -369,22 +384,10 @@
     },
 
     /**
-     * Initialize components for a new variation
+     * Initialize components for a new variation - UPDATED FOR GUTENBERG
      */
     initVariationComponents: function (index) {
-      // Initialize editor tabs
       const $variation = $(`.pronto-ab-variation[data-index="${index}"]`);
-
-      $variation.find(".editor-tab").on("click", function () {
-        const $tab = $(this);
-        const tabName = $tab.data("tab");
-
-        $tab.siblings().removeClass("active");
-        $tab.addClass("active");
-
-        $variation.find(".editor-panel").removeClass("active");
-        $variation.find(`[data-panel="${tabName}"]`).addClass("active");
-      });
 
       // Initialize weight slider
       $variation.find(".weight-slider").slider({
@@ -401,21 +404,68 @@
       $variation.find(".preview-variation").on("click", function () {
         ProntoABAdmin.showVariationPreview(index);
       });
+
+      // The Gutenberg editor will be initialized by the Gutenberg manager
+      // when it detects the new variation container
     },
 
     /**
-     * Update variation preview
+     * Show variation preview - UPDATED FOR GUTENBERG
      */
-    updateVariationPreview: function ($textarea) {
-      const content = $textarea.val();
-      const index = $textarea.closest(".pronto-ab-variation").data("index");
-      const $preview = $(`#preview_${index}`);
+    showVariationPreview: function (index) {
+      let content = "";
 
-      if (content.trim()) {
-        $preview.html(content);
-      } else {
-        $preview.html("<em>Enter content above to see preview</em>");
+      // Try to get content from Gutenberg manager first
+      if (window.prontoABGutenbergManager) {
+        content = window.prontoABGutenbergManager.getEditorContent(index);
       }
+
+      // Fallback to hidden input field
+      if (!content) {
+        const $variation = $(`.pronto-ab-variation[data-index="${index}"]`);
+        content = $variation.find(".variation-content-input").val();
+      }
+
+      if (!content || content.trim() === "") {
+        alert("No content to preview. Add some content first!");
+        return;
+      }
+
+      // Create preview modal
+      const modal = `
+        <div class="variation-preview-modal">
+          <div class="variation-preview-content">
+            <div class="variation-preview-header">
+              <h3>Variation Preview</h3>
+              <button type="button" class="variation-preview-close">&times;</button>
+            </div>
+            <div class="variation-preview-body">
+              ${content}
+            </div>
+          </div>
+        </div>
+      `;
+
+      $("body").append(modal);
+
+      // Close modal handlers
+      $(".variation-preview-close, .variation-preview-modal").on(
+        "click",
+        function (e) {
+          if (e.target === this) {
+            $(".variation-preview-modal").remove();
+          }
+        }
+      );
+
+      // ESC key to close
+      $(document).on("keydown.preview-modal", function (e) {
+        if (e.keyCode === 27) {
+          // ESC key
+          $(".variation-preview-modal").remove();
+          $(document).off("keydown.preview-modal");
+        }
+      });
     },
 
     /**
@@ -513,6 +563,12 @@
             const newFor = oldFor.replace(`_${oldIndex}`, `_${newIndex}`);
             $(this).attr("for", newFor);
           });
+
+          // Update Gutenberg editor data attributes
+          $variation.find(".pronto-ab-gutenberg-editor").each(function () {
+            $(this).attr("data-variation-index", newIndex);
+            $(this).attr("id", `variation_editor_${newIndex}`);
+          });
         }
       });
     },
@@ -531,10 +587,15 @@
     },
 
     /**
-     * Form validation
+     * Form validation - UPDATED FOR GUTENBERG
      */
     initFormValidation: function () {
       $("#pronto-ab-campaign-form").on("submit", function (e) {
+        // Sync all Gutenberg editors before validation
+        if (window.prontoABGutenbergManager) {
+          window.prontoABGutenbergManager.saveAllEditors();
+        }
+
         const errors = ProntoABAdmin.validateCampaignForm();
 
         if (errors.length > 0) {
@@ -603,7 +664,7 @@
     },
 
     /**
-     * Auto-save functionality
+     * Auto-save functionality - UPDATED FOR GUTENBERG
      */
     initAutoSave: function () {
       let autoSaveTimer;
@@ -618,9 +679,14 @@
     },
 
     /**
-     * Auto-save campaign
+     * Auto-save campaign - UPDATED FOR GUTENBERG
      */
     autoSaveCampaign: function () {
+      // Sync all Gutenberg editors before auto-save
+      if (window.prontoABGutenbergManager) {
+        window.prontoABGutenbergManager.saveAllEditors();
+      }
+
       const $form = $("#pronto-ab-campaign-form");
       const formData =
         $form.serialize() +
@@ -932,7 +998,7 @@
     },
 
     /**
-     * Initialize change tracking
+     * Initialize change tracking - UPDATED FOR GUTENBERG
      */
     initChangeTracking: function () {
       const $form = $("#pronto-ab-campaign-form");
@@ -940,6 +1006,11 @@
       let hasChanges = false;
 
       $form.on("change input", function () {
+        // Sync Gutenberg editors before checking changes
+        if (window.prontoABGutenbergManager) {
+          window.prontoABGutenbergManager.saveAllEditors();
+        }
+
         hasChanges = $form.serialize() !== originalData;
 
         if (hasChanges) {

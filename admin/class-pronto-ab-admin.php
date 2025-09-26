@@ -15,6 +15,8 @@ require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-pages.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-forms.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-ajax.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-helpers.php';
+require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-gutenberg.php';
+
 
 class Pronto_AB_Admin
 {
@@ -23,12 +25,18 @@ class Pronto_AB_Admin
     use Pronto_AB_Admin_Forms;
     use Pronto_AB_Admin_Ajax;
     use Pronto_AB_Admin_Helpers;
+    use Pronto_AB_Admin_Gutenberg;
 
     /**
      * Constructor
      */
     public function __construct()
     {
+        error_log("Pronto A/B Debug: Constructor called");
+        error_log("Pronto A/B Debug: enqueue_gutenberg_assets method exists: " . (method_exists($this, 'enqueue_gutenberg_assets') ? 'YES' : 'NO'));
+        error_log("Pronto A/B Debug: is_campaign_edit_page method exists: " . (method_exists($this, 'is_campaign_edit_page') ? 'YES' : 'NO'));
+        error_log("Pronto A/B Debug: is_gutenberg_available method exists: " . (method_exists($this, 'is_gutenberg_available') ? 'YES' : 'NO'));
+
         $this->init_hooks();
     }
 
@@ -42,6 +50,13 @@ class Pronto_AB_Admin
         add_action('admin_init', array($this, 'handle_admin_actions'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        // Gutenberg hooks - WITH DEBUG
+        $gutenberg_hook_added = add_action('admin_enqueue_scripts', array($this, 'enqueue_gutenberg_assets'));
+        error_log("Pronto A/B Debug: Gutenberg hook added: " . ($gutenberg_hook_added ? 'YES' : 'NO'));
+
+        add_action('rest_api_init', array($this, 'register_gutenberg_endpoints'));
+        add_action('wp_ajax_pronto_ab_save_gutenberg_blocks', array($this, 'ajax_save_gutenberg_blocks'));
+
         // Enhanced AJAX handlers for dynamic admin interface
         add_action('wp_ajax_pronto_ab_save_campaign', array($this, 'ajax_save_campaign'));
         add_action('wp_ajax_pronto_ab_delete_campaign', array($this, 'ajax_delete_campaign'));
@@ -51,6 +66,9 @@ class Pronto_AB_Admin
         add_action('wp_ajax_pronto_ab_autosave', array($this, 'ajax_autosave_campaign'));
         add_action('wp_ajax_pronto_ab_bulk_action', array($this, 'ajax_bulk_action'));
         add_action('wp_ajax_pronto_ab_preview_variation', array($this, 'ajax_preview_variation'));
+
+        // Debugging
+        add_action('admin_enqueue_scripts', array($this, 'debug_wp_scripts'), 999);
     }
 
     /**

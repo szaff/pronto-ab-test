@@ -144,7 +144,7 @@ trait Pronto_AB_Admin_Forms
     }
 
     /**
-     * Enhanced variations editor with better UI
+     * Enhanced variations editor - Using Gutenberg Editor
      */
     private function render_variations_editor($variations)
     {
@@ -169,7 +169,8 @@ trait Pronto_AB_Admin_Forms
         }
 
         foreach ($variations as $index => $variation):
-            $this->render_single_variation($variation, $index);
+            // CHANGE THIS LINE from wp_editor to Gutenberg:
+            $this->render_variation_with_gutenberg($variation, $index);
         endforeach;
     }
 

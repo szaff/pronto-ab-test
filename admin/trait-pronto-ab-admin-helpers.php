@@ -108,7 +108,10 @@ trait Pronto_AB_Admin_Helpers
 
             $variation->campaign_id = $campaign_id;
             $variation->name = sanitize_text_field($variation_data['name'] ?? '');
+
+            // CHANGE THIS LINE: Use wp_kses_post instead of sanitize_text_field for rich content
             $variation->content = wp_kses_post($variation_data['content'] ?? '');
+
             $variation->is_control = !empty($variation_data['is_control']);
             $variation->weight_percentage = floatval($variation_data['weight_percentage'] ?? 50);
 
