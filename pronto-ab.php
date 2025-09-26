@@ -33,6 +33,7 @@ define('PAB_PUBLIC_DIR', PAB_PLUGIN_DIR . 'public/');
 define('PAB_TEMPLATES_DIR', PAB_PLUGIN_DIR . 'templates/');
 define('PAB_ASSETS_URL', PAB_PLUGIN_URL . 'assets/');
 
+require_once PAB_INCLUDES_DIR . 'class-pronto-ab-variation-cpt.php';
 
 /**
  * Main Plugin Class
@@ -339,6 +340,10 @@ class Pronto_AB
         if (class_exists('Pronto_AB_Core')) {
             new Pronto_AB_Core();
         }
+
+        if (class_exists('Pronto_AB_Variation_CPT')) {
+            Pronto_AB_Variation_CPT::init();
+        }
     }
 
     /**
@@ -346,7 +351,26 @@ class Pronto_AB
      */
     private function register_post_types()
     {
-        // Override in specific plugin implementation
+        // Register the A/B Variation custom post type
+        if (class_exists('Pronto_AB_Variation_CPT')) {
+            // Post type registration is handled in the class
+            // But we can add the submenu here
+            add_action('admin_menu', array($this, 'add_variations_submenu'), 20);
+        }
+    }
+
+    /**
+     * Add variations submenu to the A/B Tests menu
+     */
+    public function add_variations_submenu()
+    {
+        add_submenu_page(
+            'pronto-abs',
+            __('Variations', 'pronto-ab'),
+            __('Variations', 'pronto-ab'),
+            'manage_options',
+            'edit.php?post_type=ab_variation'
+        );
     }
 
     /**

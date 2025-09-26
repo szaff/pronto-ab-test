@@ -144,34 +144,229 @@ trait Pronto_AB_Admin_Forms
     }
 
     /**
-     * Enhanced variations editor - Using Gutenberg Editor
+     * Enhanced variations editor using Custom Post Type
      */
     private function render_variations_editor($variations)
     {
-        if (empty($variations)) {
-            // Add default control variation
-            $variations = array(
-                (object) array(
-                    'id' => '',
-                    'name' => 'Control',
-                    'content' => '',
-                    'is_control' => true,
-                    'weight_percentage' => 50
-                ),
-                (object) array(
-                    'id' => '',
-                    'name' => 'Variation A',
-                    'content' => '',
-                    'is_control' => false,
-                    'weight_percentage' => 50
-                )
-            );
+        $campaign_id = isset($_GET['campaign_id']) ? intval($_GET['campaign_id']) : 0;
+
+        // Get variations from custom post type
+        $variation_posts = get_posts(array(
+            'post_type' => 'ab_variation',
+            'meta_key' => '_ab_campaign_id',
+            'meta_value' => $campaign_id,
+            'posts_per_page' => -1,
+            'post_status' => 'any'
+        ));
+
+    ?>
+        <div id="pronto-ab-variations">
+            <?php if (empty($variation_posts)): ?>
+                <div class="pronto-ab-empty-variations">
+                    <h4><?php esc_html_e('No Variations Created Yet', 'pronto-ab'); ?></h4>
+                    <p><?php esc_html_e('Create your first variation to start A/B testing.', 'pronto-ab'); ?></p>
+                </div>
+            <?php else: ?>
+                <div class="variations-list">
+                    <?php foreach ($variation_posts as $index => $variation_post): ?>
+                        <?php $this->render_variation_card($variation_post, $index); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="variation-controls">
+            <a href="<?php echo esc_url($this->get_new_variation_url($campaign_id)); ?>"
+                class="button button-primary">
+                <span class="dashicons dashicons-plus-alt"></span>
+                <?php esc_html_e('Create New Variation', 'pronto-ab'); ?>
+            </a>
+
+            <?php if (!empty($variation_posts)): ?>
+                <button type="button" id="redistribute-weights" class="button">
+                    <?php esc_html_e('Redistribute Weights Evenly', 'pronto-ab'); ?>
+                </button>
+
+                <button type="button" id="sync-variations" class="button">
+                    <?php esc_html_e('Sync All Variations', 'pronto-ab'); ?>
+                </button>
+            <?php endif; ?>
+        </div>
+
+        <div class="variations-help">
+            <h4><?php esc_html_e('How Variations Work', 'pronto-ab'); ?></h4>
+            <ul>
+                <li><?php esc_html_e('Each variation is edited using WordPress\'s full block editor', 'pronto-ab'); ?></li>
+                <li><?php esc_html_e('One variation should be marked as the "Control" (original content)', 'pronto-ab'); ?></li>
+                <li><?php esc_html_e('Traffic weight determines what percentage of visitors see each variation', 'pronto-ab'); ?></li>
+                <li><?php esc_html_e('All variation weights should add up to 100%', 'pronto-ab'); ?></li>
+            </ul>
+        </div>
+    <?php
+    }
+
+    /**
+     * Render individual variation card
+     */
+    private function render_variation_card($variation_post, $index)
+    {
+        $is_control = get_post_meta($variation_post->ID, '_ab_is_control', true);
+        $weight = get_post_meta($variation_post->ID, '_ab_weight_percentage', true) ?: 50;
+        $campaign_id = get_post_meta($variation_post->ID, '_ab_campaign_id', true);
+
+        // Get stats from database
+        $stats = $this->get_variation_stats($campaign_id, $variation_post->post_title);
+
+        $edit_url = get_edit_post_link($variation_post->ID);
+        $preview_url = $this->get_variation_preview_url($variation_post->ID);
+    ?>
+        <div class="variation-card" data-variation-id="<?php echo esc_attr($variation_post->ID); ?>">
+            <div class="variation-card-header">
+                <h4 class="variation-title">
+                    <a href="<?php echo esc_url($edit_url); ?>"><?php echo esc_html($variation_post->post_title); ?></a>
+                    <?php if ($is_control): ?>
+                        <span class="control-badge"><?php esc_html_e('Control', 'pronto-ab'); ?></span>
+                    <?php endif; ?>
+                </h4>
+                <div class="variation-actions">
+                    <a href="<?php echo esc_url($edit_url); ?>" class="button button-small">
+                        <span class="dashicons dashicons-edit"></span>
+                        <?php esc_html_e('Edit', 'pronto-ab'); ?>
+                    </a>
+
+                    <?php if ($preview_url): ?>
+                        <a href="<?php echo esc_url($preview_url); ?>" class="button button-small" target="_blank">
+                            <span class="dashicons dashicons-visibility"></span>
+                            <?php esc_html_e('Preview', 'pronto-ab'); ?>
+                        </a>
+                    <?php endif; ?>
+
+                    <button type="button" class="button button-small duplicate-variation"
+                        data-variation-id="<?php echo esc_attr($variation_post->ID); ?>">
+                        <span class="dashicons dashicons-admin-page"></span>
+                        <?php esc_html_e('Duplicate', 'pronto-ab'); ?>
+                    </button>
+
+                    <?php if (!$is_control): ?>
+                        <button type="button" class="button button-small button-link-delete delete-variation"
+                            data-variation-id="<?php echo esc_attr($variation_post->ID); ?>"
+                            data-variation-name="<?php echo esc_attr($variation_post->post_title); ?>">
+                            <span class="dashicons dashicons-trash"></span>
+                            <?php esc_html_e('Delete', 'pronto-ab'); ?>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="variation-card-content">
+                <div class="variation-meta">
+                    <div class="meta-item">
+                        <label><?php esc_html_e('Traffic Weight:', 'pronto-ab'); ?></label>
+                        <span class="weight-value"><?php echo esc_html($weight); ?>%</span>
+                        <input type="range" class="weight-slider"
+                            min="0" max="100" step="0.1"
+                            value="<?php echo esc_attr($weight); ?>"
+                            data-variation-id="<?php echo esc_attr($variation_post->ID); ?>">
+                    </div>
+
+                    <div class="meta-item">
+                        <label><?php esc_html_e('Status:', 'pronto-ab'); ?></label>
+                        <span class="status-<?php echo esc_attr($variation_post->post_status); ?>">
+                            <?php echo esc_html(ucfirst($variation_post->post_status)); ?>
+                        </span>
+                    </div>
+
+                    <div class="meta-item">
+                        <label><?php esc_html_e('Last Modified:', 'pronto-ab'); ?></label>
+                        <span><?php echo esc_html(get_the_modified_date('M j, Y', $variation_post)); ?></span>
+                    </div>
+                </div>
+
+                <?php if ($stats): ?>
+                    <div class="variation-stats">
+                        <div class="stat-item">
+                            <strong><?php echo number_format($stats['impressions']); ?></strong>
+                            <span><?php esc_html_e('Impressions', 'pronto-ab'); ?></span>
+                        </div>
+                        <div class="stat-item">
+                            <strong><?php echo number_format($stats['conversions']); ?></strong>
+                            <span><?php esc_html_e('Conversions', 'pronto-ab'); ?></span>
+                        </div>
+                        <div class="stat-item">
+                            <strong><?php echo $stats['conversion_rate']; ?>%</strong>
+                            <span><?php esc_html_e('Rate', 'pronto-ab'); ?></span>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="variation-stats-empty">
+                        <p><?php esc_html_e('No performance data yet. Activate campaign to start collecting data.', 'pronto-ab'); ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <div class="variation-content-preview">
+                    <label><?php esc_html_e('Content Preview:', 'pronto-ab'); ?></label>
+                    <div class="content-preview">
+                        <?php
+                        $content = wp_trim_words(wp_strip_all_tags($variation_post->post_content), 20);
+                        echo esc_html($content ?: 'No content yet...');
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php
+    }
+
+    /**
+     * Get URL for creating new variation
+     */
+    private function get_new_variation_url($campaign_id)
+    {
+        $url = admin_url('post-new.php?post_type=ab_variation');
+        if ($campaign_id) {
+            $url = add_query_arg('campaign_id', $campaign_id, $url);
+        }
+        return $url;
+    }
+
+    /**
+     * Get variation preview URL
+     */
+    private function get_variation_preview_url($variation_id)
+    {
+        $preview_url = get_preview_post_link($variation_id);
+        return $preview_url;
+    }
+
+    /**
+     * Get variation statistics
+     */
+    private function get_variation_stats($campaign_id, $variation_name)
+    {
+        if (!$campaign_id || !$variation_name) {
+            return null;
         }
 
-        foreach ($variations as $index => $variation):
-            // CHANGE THIS LINE from wp_editor to Gutenberg:
-            $this->render_variation_with_gutenberg($variation, $index);
-        endforeach;
+        global $wpdb;
+        $table = Pronto_AB_Database::get_variations_table();
+        $variation = $wpdb->get_row($wpdb->prepare(
+            "SELECT impressions, conversions FROM $table WHERE campaign_id = %d AND name = %s",
+            $campaign_id,
+            $variation_name
+        ));
+
+        if (!$variation) {
+            return null;
+        }
+
+        $conversion_rate = $variation->impressions > 0 ?
+            round(($variation->conversions / $variation->impressions) * 100, 2) : 0;
+
+        return array(
+            'impressions' => $variation->impressions,
+            'conversions' => $variation->conversions,
+            'conversion_rate' => $conversion_rate
+        );
     }
 
     /**
