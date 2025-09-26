@@ -10,46 +10,47 @@
 trait Pronto_AB_Admin_Helpers
 {
     /**
-     * Save campaign form data with enhanced validation
+     * Save campaign form data with enhanced validation and debugging
      */
     private function save_campaign_form($campaign)
     {
+        error_log("Pronto A/B Debug: save_campaign_form() called");
+
         $errors = array();
 
         // Validate required fields
         $campaign_name = sanitize_text_field($_POST['campaign_name'] ?? '');
+        error_log("Pronto A/B Debug: Campaign name: " . $campaign_name);
+
         if (empty($campaign_name)) {
             $errors[] = __('Campaign name is required', 'pronto-ab');
         }
 
-        // Validate variations
+        // Validate variations (skip for now since we're using custom post types)
         $variations_data = $_POST['variations'] ?? array();
-        if (empty($variations_data)) {
-            $errors[] = __('At least one variation is required', 'pronto-ab');
-        }
-
-        // Validate weights
-        $total_weight = 0;
-        foreach ($variations_data as $variation_data) {
-            $total_weight += floatval($variation_data['weight_percentage'] ?? 0);
-        }
-
-        if (abs($total_weight - 100) > 1) {
-            $errors[] = __('Total variation weights should equal 100%', 'pronto-ab');
-        }
+        error_log("Pronto A/B Debug: Variations data: " . print_r($variations_data, true));
 
         // Validate dates
         $start_date = $_POST['start_date'] ?? '';
         $end_date = $_POST['end_date'] ?? '';
+        error_log("Pronto A/B Debug: Start date: " . $start_date . ", End date: " . $end_date);
+
         if ($start_date && $end_date && strtotime($start_date) >= strtotime($end_date)) {
             $errors[] = __('End date must be after start date', 'pronto-ab');
         }
 
         if (!empty($errors)) {
+            error_log("Pronto A/B Debug: Validation errors: " . implode(', ', $errors));
             return array(
                 'success' => false,
                 'message' => implode('<br>', $errors)
             );
+        }
+
+        // Check if database tables exist
+        if (!$this->verify_database_tables()) {
+            error_log("Pronto A/B Debug: Database tables missing, creating them");
+            Pronto_AB_Database::create_tables();
         }
 
         // Save campaign data
@@ -62,9 +63,16 @@ trait Pronto_AB_Admin_Helpers
         $campaign->start_date = $start_date ? date('Y-m-d H:i:s', strtotime($start_date)) : null;
         $campaign->end_date = $end_date ? date('Y-m-d H:i:s', strtotime($end_date)) : null;
 
+        error_log("Pronto A/B Debug: About to save campaign with data: " . print_r($campaign, true));
+
         if ($campaign->save()) {
-            // Save variations
-            $this->save_campaign_variations($campaign->id, $variations_data);
+            error_log("Pronto A/B Debug: Campaign saved successfully with ID: " . $campaign->id);
+
+            // Save variations if provided
+            if (!empty($variations_data)) {
+                error_log("Pronto A/B Debug: Saving variations");
+                $this->save_campaign_variations($campaign->id, $variations_data);
+            }
 
             // Log campaign save
             $this->log_campaign_action($campaign->id, 'saved', array(
@@ -77,11 +85,31 @@ trait Pronto_AB_Admin_Helpers
                 'campaign_id' => $campaign->id
             );
         } else {
+            global $wpdb;
+            $db_error = $wpdb->last_error;
+            error_log("Pronto A/B Debug: Campaign save failed. DB Error: " . $db_error);
+            error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
+
             return array(
                 'success' => false,
-                'message' => __('Failed to save campaign', 'pronto-ab')
+                'message' => __('Failed to save campaign', 'pronto-ab') . ($db_error ? ': ' . $db_error : '')
             );
         }
+    }
+
+    /**
+     * Verify database tables exist
+     */
+    private function verify_database_tables()
+    {
+        global $wpdb;
+
+        $campaigns_table = Pronto_AB_Database::get_campaigns_table();
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$campaigns_table'") === $campaigns_table;
+
+        error_log("Pronto A/B Debug: Campaigns table exists: " . ($table_exists ? 'YES' : 'NO'));
+
+        return $table_exists;
     }
 
     /**

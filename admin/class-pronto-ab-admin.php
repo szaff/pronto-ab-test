@@ -53,8 +53,10 @@ class Pronto_AB_Admin
      */
     public function add_admin_menu()
     {
+        error_log("Pronto A/B Debug: add_admin_menu() called");
+
         // Main menu page
-        add_menu_page(
+        $main_page = add_menu_page(
             __('A/B Tests', 'pronto-ab'),
             __('A/B Tests', 'pronto-ab'),
             'manage_options',
@@ -64,8 +66,10 @@ class Pronto_AB_Admin
             25
         );
 
+        error_log("Pronto A/B Debug: Main menu page added: " . $main_page);
+
         // Submenu pages
-        add_submenu_page(
+        $submenu_1 = add_submenu_page(
             'pronto-abs',
             __('All Campaigns', 'pronto-ab'),
             __('All Campaigns', 'pronto-ab'),
@@ -74,7 +78,7 @@ class Pronto_AB_Admin
             array($this, 'campaigns_list_page')
         );
 
-        add_submenu_page(
+        $submenu_2 = add_submenu_page(
             'pronto-abs',
             __('Add New Campaign', 'pronto-ab'),
             __('Add New', 'pronto-ab'),
@@ -83,7 +87,7 @@ class Pronto_AB_Admin
             array($this, 'campaign_edit_page')
         );
 
-        add_submenu_page(
+        $submenu_3 = add_submenu_page(
             'pronto-abs',
             __('Analytics', 'pronto-ab'),
             __('Analytics', 'pronto-ab'),
@@ -92,7 +96,7 @@ class Pronto_AB_Admin
             array($this, 'analytics_page')
         );
 
-        add_submenu_page(
+        $submenu_4 = add_submenu_page(
             'pronto-abs',
             __('Settings', 'pronto-ab'),
             __('Settings', 'pronto-ab'),
@@ -100,6 +104,9 @@ class Pronto_AB_Admin
             'pronto-abs-settings',
             array($this, 'settings_page')
         );
+
+        error_log("Pronto A/B Debug: All submenus added");
+        error_log("Pronto A/B Debug: Current user can manage_options: " . (current_user_can('manage_options') ? 'YES' : 'NO'));
     }
 
     /**

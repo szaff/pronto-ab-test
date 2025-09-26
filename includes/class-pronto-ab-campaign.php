@@ -26,6 +26,21 @@ class Pronto_AB_Campaign
      */
     public function __construct($data = array())
     {
+        // Initialize all properties with default values
+        $this->id = null;
+        $this->name = '';
+        $this->description = '';
+        $this->status = 'draft';
+        $this->target_post_id = null;
+        $this->target_post_type = '';
+        $this->traffic_split = '50/50';
+        $this->start_date = null;
+        $this->end_date = null;
+        $this->winner_variation_id = null;
+        $this->total_impressions = 0;
+        $this->created_at = null;
+        $this->updated_at = null;
+
         if (!empty($data)) {
             $this->fill($data);
         }
@@ -54,17 +69,35 @@ class Pronto_AB_Campaign
 
         foreach ($properties as $property) {
             if (isset($data[$property])) {
-                $this->$property = $data[$property];
+                // Special handling for string properties that should never be null
+                if (in_array($property, ['name', 'description', 'status', 'target_post_type', 'traffic_split'])) {
+                    $this->$property = (string)$data[$property];
+                } else {
+                    $this->$property = $data[$property];
+                }
             }
         }
     }
 
     /**
-     * Save campaign (create or update)
+     * Save campaign (create or update) with enhanced debugging
      */
     public function save()
     {
         global $wpdb;
+
+        error_log("Pronto A/B Debug: Campaign save() method called");
+        error_log("Pronto A/B Debug: Campaign ID: " . ($this->id ?? 'NEW'));
+        error_log("Pronto A/B Debug: Campaign name: " . ($this->name ?? 'EMPTY'));
+
+        // Verify table exists
+        $table = Pronto_AB_Database::get_campaigns_table();
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
+
+        if (!$table_exists) {
+            error_log("Pronto A/B Debug: Campaigns table doesn't exist, creating tables");
+            Pronto_AB_Database::create_tables();
+        }
 
         $data = array(
             'name' => $this->name,
@@ -80,25 +113,44 @@ class Pronto_AB_Campaign
 
         $formats = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d');
 
+        error_log("Pronto A/B Debug: Data to save: " . print_r($data, true));
+
         if ($this->id) {
             // Update existing campaign
+            error_log("Pronto A/B Debug: Updating existing campaign ID: " . $this->id);
+
             $result = $wpdb->update(
-                Pronto_AB_Database::get_campaigns_table(),
+                $table,
                 $data,
                 array('id' => $this->id),
                 $formats,
                 array('%d')
             );
+
+            error_log("Pronto A/B Debug: Update result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            if ($result === false) {
+                error_log("Pronto A/B Debug: Update error: " . $wpdb->last_error);
+                error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
+            }
         } else {
             // Create new campaign
+            error_log("Pronto A/B Debug: Creating new campaign");
+
             $result = $wpdb->insert(
-                Pronto_AB_Database::get_campaigns_table(),
+                $table,
                 $data,
                 $formats
             );
 
+            error_log("Pronto A/B Debug: Insert result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            if ($result === false) {
+                error_log("Pronto A/B Debug: Insert error: " . $wpdb->last_error);
+                error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
+            }
+
             if ($result) {
                 $this->id = $wpdb->insert_id;
+                error_log("Pronto A/B Debug: New campaign ID: " . $this->id);
             }
         }
 
@@ -222,21 +274,39 @@ class Pronto_AB_Campaign
     {
         global $wpdb;
 
-        $stats = $wpdb->get_row($wpdb->prepare("
-            SELECT 
-                COUNT(*) as total_events,
-                COUNT(DISTINCT visitor_id) as unique_visitors,
-                SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions,
-                SUM(CASE WHEN event_type = 'conversion' THEN 1 ELSE 0 END) as conversions
-            FROM " . Pronto_AB_Database::get_analytics_table() . "
-            WHERE campaign_id = %d
-        ", $this->id), ARRAY_A);
-
-        return $stats ?: array(
+        // Default stats structure
+        $default_stats = array(
             'total_events' => 0,
             'unique_visitors' => 0,
             'impressions' => 0,
             'conversions' => 0
         );
+
+        // If no campaign ID, return defaults
+        if (!$this->id) {
+            return $default_stats;
+        }
+
+        $stats = $wpdb->get_row($wpdb->prepare("
+        SELECT 
+            COUNT(*) as total_events,
+            COUNT(DISTINCT visitor_id) as unique_visitors,
+            SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions,
+            SUM(CASE WHEN event_type = 'conversion' THEN 1 ELSE 0 END) as conversions
+        FROM " . Pronto_AB_Database::get_analytics_table() . "
+        WHERE campaign_id = %d
+    ", $this->id), ARRAY_A);
+
+        // If query failed or returned null, use defaults
+        if (!$stats || !is_array($stats)) {
+            return $default_stats;
+        }
+
+        // Ensure all values are integers (never null)
+        foreach ($default_stats as $key => $default_value) {
+            $stats[$key] = isset($stats[$key]) ? (int)$stats[$key] : $default_value;
+        }
+
+        return $stats;
     }
 }

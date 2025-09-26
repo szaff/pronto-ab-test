@@ -22,7 +22,7 @@ trait Pronto_AB_Admin_Forms
                 </th>
                 <td>
                     <input type="text" id="campaign_name" name="campaign_name"
-                        value="<?php echo esc_attr($campaign->name); ?>"
+                        value="<?php echo esc_attr($campaign->name ?? ''); ?>"
                         class="regular-text" required aria-describedby="campaign-name-description">
                     <p class="description" id="campaign-name-description">
                         <?php esc_html_e('Give your campaign a descriptive name.', 'pronto-ab'); ?>
@@ -35,7 +35,7 @@ trait Pronto_AB_Admin_Forms
                 </th>
                 <td>
                     <textarea id="campaign_description" name="campaign_description"
-                        rows="3" class="large-text" aria-describedby="campaign-description-description"><?php echo esc_textarea($campaign->description); ?></textarea>
+                        rows="3" class="large-text" aria-describedby="campaign-description-description"><?php echo esc_textarea($campaign->description ?? ''); ?></textarea>
                     <p class="description" id="campaign-description-description">
                         <?php esc_html_e('Optional description of what this campaign is testing.', 'pronto-ab'); ?>
                     </p>
@@ -55,12 +55,12 @@ trait Pronto_AB_Admin_Forms
                 </th>
                 <td>
                     <select id="traffic_split" name="traffic_split" aria-describedby="traffic-split-description">
-                        <option value="50/50" <?php selected($campaign->traffic_split, '50/50'); ?>>50/50</option>
-                        <option value="60/40" <?php selected($campaign->traffic_split, '60/40'); ?>>60/40</option>
-                        <option value="70/30" <?php selected($campaign->traffic_split, '70/30'); ?>>70/30</option>
-                        <option value="80/20" <?php selected($campaign->traffic_split, '80/20'); ?>>80/20</option>
-                        <option value="90/10" <?php selected($campaign->traffic_split, '90/10'); ?>>90/10</option>
-                        <option value="custom" <?php selected($campaign->traffic_split, 'custom'); ?>><?php esc_html_e('Custom (set in variations)', 'pronto-ab'); ?></option>
+                        <option value="50/50" <?php selected($campaign->traffic_split ?? '50/50', '50/50'); ?>>50/50</option>
+                        <option value="60/40" <?php selected($campaign->traffic_split ?? '50/50', '60/40'); ?>>60/40</option>
+                        <option value="70/30" <?php selected($campaign->traffic_split ?? '50/50', '70/30'); ?>>70/30</option>
+                        <option value="80/20" <?php selected($campaign->traffic_split ?? '50/50', '80/20'); ?>>80/20</option>
+                        <option value="90/10" <?php selected($campaign->traffic_split ?? '50/50', '90/10'); ?>>90/10</option>
+                        <option value="custom" <?php selected($campaign->traffic_split ?? '50/50', 'custom'); ?>><?php esc_html_e('Custom (set in variations)', 'pronto-ab'); ?></option>
                     </select>
                     <div id="traffic-split-visualizer"></div>
                     <p class="description" id="traffic-split-description">
@@ -104,24 +104,26 @@ trait Pronto_AB_Admin_Forms
     private function render_target_content_selector($campaign)
     {
         $post_types = get_post_types(array('public' => true), 'objects');
+        $target_post_type = $campaign->target_post_type ?? '';
+        $target_post_id = $campaign->target_post_id ?? 0;
     ?>
         <div class="pronto-ab-target-selector">
             <select id="target_post_type" name="target_post_type" aria-describedby="target-content-description">
                 <option value=""><?php esc_html_e('Select post type', 'pronto-ab'); ?></option>
                 <?php foreach ($post_types as $post_type): ?>
                     <option value="<?php echo esc_attr($post_type->name); ?>"
-                        <?php selected($campaign->target_post_type, $post_type->name); ?>>
+                        <?php selected($target_post_type, $post_type->name); ?>>
                         <?php echo esc_html($post_type->labels->singular_name); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
 
-            <select id="target_post_id" name="target_post_id" style="<?php echo $campaign->target_post_type ? '' : 'display:none;'; ?>" disabled>
+            <select id="target_post_id" name="target_post_id" style="<?php echo $target_post_type ? '' : 'display:none;'; ?>" <?php echo $target_post_type ? '' : 'disabled'; ?>>
                 <option value=""><?php esc_html_e('Select content', 'pronto-ab'); ?></option>
-                <?php if ($campaign->target_post_type): ?>
+                <?php if ($target_post_type): ?>
                     <?php
                     $posts = get_posts(array(
-                        'post_type' => $campaign->target_post_type,
+                        'post_type' => $target_post_type,
                         'post_status' => 'publish',
                         'numberposts' => 100,
                         'orderby' => 'title',
@@ -129,7 +131,7 @@ trait Pronto_AB_Admin_Forms
                     ));
                     foreach ($posts as $post): ?>
                         <option value="<?php echo esc_attr($post->ID); ?>"
-                            <?php selected($campaign->target_post_id, $post->ID); ?>>
+                            <?php selected($target_post_id, $post->ID); ?>>
                             <?php echo esc_html($post->post_title); ?>
                         </option>
                     <?php endforeach; ?>
@@ -357,6 +359,14 @@ trait Pronto_AB_Admin_Forms
         $stats = $campaign->get_stats();
         $variations = $campaign->get_variations();
 
+        // Ensure stats are never null - provide defaults
+        $stats = array_merge(array(
+            'total_events' => 0,
+            'unique_visitors' => 0,
+            'impressions' => 0,
+            'conversions' => 0
+        ), $stats ?: array());
+
     ?>
         <div class="postbox">
             <div class="postbox-header">
@@ -372,26 +382,32 @@ trait Pronto_AB_Admin_Forms
                 <div class="pronto-ab-stats" data-campaign-id="<?php echo esc_attr($campaign->id); ?>">
                     <div class="stats-summary">
                         <div class="stat-item">
-                            <strong class="stat-impressions"><?php echo number_format($stats['impressions']); ?></strong>
+                            <strong class="stat-impressions"><?php echo number_format((int)$stats['impressions']); ?></strong>
                             <span><?php esc_html_e('Total Impressions', 'pronto-ab'); ?></span>
                         </div>
                         <div class="stat-item">
-                            <strong class="stat-conversions"><?php echo number_format($stats['conversions']); ?></strong>
+                            <strong class="stat-conversions"><?php echo number_format((int)$stats['conversions']); ?></strong>
                             <span><?php esc_html_e('Total Conversions', 'pronto-ab'); ?></span>
                         </div>
                         <div class="stat-item">
-                            <strong class="stat-visitors"><?php echo number_format($stats['unique_visitors']); ?></strong>
+                            <strong class="stat-visitors"><?php echo number_format((int)$stats['unique_visitors']); ?></strong>
                             <span><?php esc_html_e('Unique Visitors', 'pronto-ab'); ?></span>
                         </div>
                         <div class="stat-item">
                             <strong class="stat-rate">
-                                <?php echo $stats['impressions'] > 0 ? round(($stats['conversions'] / $stats['impressions']) * 100, 2) : 0; ?>%
+                                <?php
+                                $conversion_rate = 0;
+                                if ((int)$stats['impressions'] > 0) {
+                                    $conversion_rate = round(((int)$stats['conversions'] / (int)$stats['impressions']) * 100, 2);
+                                }
+                                echo $conversion_rate;
+                                ?>%
                             </strong>
                             <span><?php esc_html_e('Conversion Rate', 'pronto-ab'); ?></span>
                         </div>
                     </div>
 
-                    <?php if (!empty($variations) && $stats['impressions'] > 0): ?>
+                    <?php if (!empty($variations) && (int)$stats['impressions'] > 0): ?>
                         <div class="variations-performance">
                             <h4><?php esc_html_e('Variation Performance', 'pronto-ab'); ?></h4>
                             <?php foreach ($variations as $variation): ?>
@@ -402,9 +418,9 @@ trait Pronto_AB_Admin_Forms
                                     <?php endif; ?>
                                     <br>
                                     <small>
-                                        <span class="variation-impressions"><?php echo number_format($variation->impressions); ?></span> impressions,
-                                        <span class="variation-conversions"><?php echo number_format($variation->conversions); ?></span> conversions
-                                        (<span class="variation-rate"><?php echo $variation->get_conversion_rate(); ?></span>%)
+                                        <span class="variation-impressions"><?php echo number_format((int)$variation->impressions); ?></span> impressions,
+                                        <span class="variation-conversions"><?php echo number_format((int)$variation->conversions); ?></span> conversions
+                                        (<span class="variation-rate"><?php echo esc_html($variation->get_conversion_rate()); ?></span>%)
                                     </small>
                                 </div>
                             <?php endforeach; ?>

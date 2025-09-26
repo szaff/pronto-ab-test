@@ -151,10 +151,14 @@ class Pronto_AB_Variation
      */
     public function get_conversion_rate()
     {
-        if (!$this->impressions || $this->impressions == 0) {
+        // Ensure impressions and conversions are never null
+        $impressions = (int)($this->impressions ?? 0);
+        $conversions = (int)($this->conversions ?? 0);
+
+        if ($impressions <= 0) {
             return 0;
         }
 
-        return round(($this->conversions / $this->impressions) * 100, 2);
+        return round(($conversions / $impressions) * 100, 2);
     }
 }

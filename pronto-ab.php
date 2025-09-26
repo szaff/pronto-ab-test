@@ -314,9 +314,29 @@ class Pronto_AB
      */
     private function init_admin()
     {
+        error_log("Pronto A/B Debug: init_admin() called");
+
         // Load admin classes
         if (class_exists('Pronto_AB_Admin')) {
-            new Pronto_AB_Admin();
+            error_log("Pronto A/B Debug: Pronto_AB_Admin class exists, creating instance");
+            $admin_instance = new Pronto_AB_Admin();
+            error_log("Pronto A/B Debug: Admin instance created successfully");
+        } else {
+            error_log("Pronto A/B Debug: Pronto_AB_Admin class NOT found");
+
+            // Try to manually load the admin class
+            $admin_file = PAB_ADMIN_DIR . 'class-pronto-ab-admin.php';
+            if (file_exists($admin_file)) {
+                require_once $admin_file;
+                error_log("Pronto A/B Debug: Admin file loaded manually");
+
+                if (class_exists('Pronto_AB_Admin')) {
+                    $admin_instance = new Pronto_AB_Admin();
+                    error_log("Pronto A/B Debug: Admin instance created after manual load");
+                }
+            } else {
+                error_log("Pronto A/B Debug: Admin file not found at: " . $admin_file);
+            }
         }
     }
 

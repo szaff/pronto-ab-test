@@ -113,21 +113,41 @@ trait Pronto_AB_Admin_Pages
      */
     public function campaign_edit_page()
     {
+        error_log("Pronto A/B Debug: campaign_edit_page() called");
+
         $campaign_id = isset($_GET['campaign_id']) ? intval($_GET['campaign_id']) : 0;
         $campaign = $campaign_id ? Pronto_AB_Campaign::find($campaign_id) : new Pronto_AB_Campaign();
         $variations = $campaign_id ? $campaign->get_variations() : array();
 
+        error_log("Pronto A/B Debug: Campaign ID: " . $campaign_id);
+        error_log("Pronto A/B Debug: POST data: " . print_r($_POST, true));
+
         // Handle form submission
-        if (isset($_POST['save_campaign']) && wp_verify_nonce($_POST['_wpnonce'], 'pronto_ab_save_campaign')) {
-            $result = $this->save_campaign_form($campaign);
-            if ($result['success']) {
-                wp_redirect($result['redirect_url']);
-                exit;
+        if (isset($_POST['save_campaign'])) {
+            error_log("Pronto A/B Debug: Form submitted with save_campaign");
+
+            // Check nonce
+            if (!wp_verify_nonce($_POST['_wpnonce'], 'pronto_ab_save_campaign')) {
+                error_log("Pronto A/B Debug: Nonce verification failed");
+                $this->add_admin_notice('error', __('Security check failed. Please try again.', 'pronto-ab'));
             } else {
-                $this->add_admin_notice('error', $result['message']);
+                error_log("Pronto A/B Debug: Nonce verified, processing form");
+
+                // Process the form
+                $result = $this->save_campaign_form($campaign);
+
+                error_log("Pronto A/B Debug: Save result: " . print_r($result, true));
+
+                if ($result['success']) {
+                    error_log("Pronto A/B Debug: Save successful, redirecting to: " . $result['redirect_url']);
+                    wp_redirect($result['redirect_url']);
+                    exit;
+                } else {
+                    error_log("Pronto A/B Debug: Save failed: " . $result['message']);
+                    $this->add_admin_notice('error', $result['message']);
+                }
             }
         }
-
     ?>
         <div class="wrap">
             <h1>
@@ -197,6 +217,13 @@ trait Pronto_AB_Admin_Pages
         $stats = $campaign->get_stats();
         $target_content = $this->get_target_content_display($campaign);
 
+        // Ensure stats are never null
+        $stats = array_merge(array(
+            'impressions' => 0,
+            'conversions' => 0,
+            'unique_visitors' => 0
+        ), $stats ?: array());
+
         // Status styling
         $status_colors = array(
             'draft' => '#999',
@@ -247,12 +274,18 @@ trait Pronto_AB_Admin_Pages
             </td>
             <td class="campaign-traffic"><?php echo esc_html($campaign->traffic_split); ?></td>
             <td class="campaign-performance">
-                <?php if ($stats['impressions'] > 0): ?>
+                <?php if ((int)$stats['impressions'] > 0): ?>
                     <div class="performance-stats">
-                        <strong><?php echo number_format($stats['impressions']); ?></strong> impressions<br>
-                        <strong><?php echo number_format($stats['conversions']); ?></strong> conversions<br>
+                        <strong><?php echo number_format((int)$stats['impressions']); ?></strong> impressions<br>
+                        <strong><?php echo number_format((int)$stats['conversions']); ?></strong> conversions<br>
                         <small class="conversion-rate">
-                            <?php echo round(($stats['conversions'] / $stats['impressions']) * 100, 2); ?>% conversion rate
+                            <?php
+                            $conversion_rate = 0;
+                            if ((int)$stats['impressions'] > 0) {
+                                $conversion_rate = round(((int)$stats['conversions'] / (int)$stats['impressions']) * 100, 2);
+                            }
+                            echo $conversion_rate;
+                            ?>% conversion rate
                         </small>
                     </div>
                 <?php else: ?>
@@ -532,15 +565,15 @@ trait Pronto_AB_Admin_Pages
                 <?php if ($stats && $stats['impressions'] > 0): ?>
                     <div class="variation-stats">
                         <div class="stat-item">
-                            <strong><?php echo number_format($stats['impressions']); ?></strong>
+                            <strong><?php echo number_format((int)$stats['impressions']); ?></strong>
                             <span><?php esc_html_e('Impressions', 'pronto-ab'); ?></span>
                         </div>
                         <div class="stat-item">
-                            <strong><?php echo number_format($stats['conversions']); ?></strong>
+                            <strong><?php echo number_format((int)$stats['conversions']); ?></strong>
                             <span><?php esc_html_e('Conversions', 'pronto-ab'); ?></span>
                         </div>
                         <div class="stat-item">
-                            <strong><?php echo $stats['conversion_rate']; ?>%</strong>
+                            <strong><?php echo number_format($stats['conversion_rate'], 2); ?>%</strong>
                             <span><?php esc_html_e('Rate', 'pronto-ab'); ?></span>
                         </div>
                     </div>
@@ -600,12 +633,18 @@ trait Pronto_AB_Admin_Pages
             return null;
         }
 
-        $conversion_rate = $variation->impressions > 0 ?
-            round(($variation->conversions / $variation->impressions) * 100, 2) : 0;
+        // Ensure values are never null
+        $impressions = (int)($variation->impressions ?? 0);
+        $conversions = (int)($variation->conversions ?? 0);
+
+        $conversion_rate = 0;
+        if ($impressions > 0) {
+            $conversion_rate = round(($conversions / $impressions) * 100, 2);
+        }
 
         return array(
-            'impressions' => $variation->impressions,
-            'conversions' => $variation->conversions,
+            'impressions' => $impressions,
+            'conversions' => $conversions,
             'conversion_rate' => $conversion_rate
         );
     }
