@@ -1,0 +1,368 @@
+/**
+ * Pronto A/B Testing - Frontend CSS
+ * 
+ * Styles for A/B test content display and tracking elements
+ */
+
+/* =================================
+   CORE A/B TEST CONTENT STYLES
+   ================================= */
+
+.pronto-ab-content {
+    /* Base container for A/B test content */
+    position: relative;
+}
+
+/* Ensure A/B test content doesn't break layouts */
+.pronto-ab-content>* {
+    max-width: 100%;
+}
+
+/* =================================
+     VARIATION INDICATORS (DEBUG MODE)
+     ================================= */
+
+.pronto-ab-debug {
+    font-family: "Courier New", monospace;
+    font-size: 12px !important;
+    line-height: 1.4;
+    background: #e8f4f8 !important;
+    border: 1px solid #3498db !important;
+    padding: 8px !important;
+    margin: 8px 0 !important;
+    color: #2c3e50 !important;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pronto-ab-debug strong {
+    color: #2980b9 !important;
+    font-weight: bold;
+}
+
+.pronto-ab-error {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px !important;
+    background: #ffe6e6 !important;
+    border: 1px solid #ff6b6b !important;
+    padding: 10px !important;
+    margin: 10px 0 !important;
+    color: #c0392b !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(220, 50, 50, 0.1);
+}
+
+.pronto-ab-error strong {
+    font-weight: bold;
+}
+
+/* =================================
+     CONTENT TYPE SPECIFIC STYLES
+     ================================= */
+
+/* Headlines */
+.ab-element-headline .pronto-ab-content,
+.ab-element-title .pronto-ab-content {
+    display: block;
+    margin-bottom: 1em;
+}
+
+/* Call-to-Action Buttons */
+.ab-element-cta .pronto-ab-content,
+.ab-element-button .pronto-ab-content {
+    display: inline-block;
+}
+
+.ab-element-cta .pronto-ab-content a,
+.ab-element-button .pronto-ab-content a,
+.ab-element-cta .pronto-ab-content button,
+.ab-element-button .pronto-ab-content button {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* Text Content */
+.ab-element-text .pronto-ab-content {
+    line-height: inherit;
+}
+
+/* Images */
+.ab-element-image .pronto-ab-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* =================================
+     TRACKING ENHANCEMENT STYLES
+     ================================= */
+
+/* Subtle highlight for trackable elements (visible only to admin users) */
+.admin-bar .pronto-ab-content {
+    position: relative;
+}
+
+.admin-bar .pronto-ab-content::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px dashed rgba(0, 123, 191, 0.3);
+    pointer-events: none;
+    z-index: 1000;
+    border-radius: 3px;
+}
+
+.admin-bar .pronto-ab-content::after {
+    content: "A/B Test: " attr(data-variation) " (Campaign " attr(data-campaign) ")";
+    position: absolute;
+    top: -20px;
+    left: 0;
+    background: rgba(0, 123, 191, 0.9);
+    color: white;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-family: system-ui, sans-serif;
+    border-radius: 2px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1001;
+    line-height: 1.2;
+}
+
+/* Hide admin indicators on hover to prevent content interaction issues */
+.admin-bar .pronto-ab-content:hover::before,
+.admin-bar .pronto-ab-content:hover::after {
+    opacity: 0.5;
+}
+
+/* =================================
+     CONTROL VS VARIATION STYLING
+     ================================= */
+
+/* Subtle visual differentiation for variations (debug mode only) */
+body.has-ab-tests.ab-debug .ab-variation {
+    box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.2);
+}
+
+body.has-ab-tests.ab-debug .ab-control {
+    box-shadow: inset 0 0 0 1px rgba(52, 152, 219, 0.2);
+}
+
+/* =================================
+     RESPONSIVE CONSIDERATIONS
+     ================================= */
+
+/* Ensure A/B test content is mobile-friendly */
+@media (max-width: 768px) {
+    .pronto-ab-content {
+        /* Prevent content from overflowing on mobile */
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    /* Smaller debug info on mobile */
+    .pronto-ab-debug {
+        font-size: 10px !important;
+        padding: 6px !important;
+        margin: 6px 0 !important;
+    }
+
+    /* Hide admin indicators on mobile for cleaner view */
+    .admin-bar .pronto-ab-content::before,
+    .admin-bar .pronto-ab-content::after {
+        display: none;
+    }
+}
+
+/* =================================
+     ANIMATION CLASSES
+     ================================= */
+
+/* Subtle fade-in for A/B test content */
+.pronto-ab-content {
+    animation: abTestFadeIn 0.3s ease-in-out;
+}
+
+@keyframes abTestFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Disable animations if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .pronto-ab-content {
+        animation: none;
+    }
+}
+
+/* =================================
+     INTERACTION TRACKING STYLES
+     ================================= */
+
+/* Enhance clickable elements for better tracking */
+.pronto-ab-content a,
+.pronto-ab-content button,
+.pronto-ab-content [role="button"],
+.pronto-ab-content input[type="submit"],
+.pronto-ab-content input[type="button"] {
+    position: relative;
+    transition: transform 0.2s ease;
+}
+
+/* Subtle interaction feedback */
+.pronto-ab-content a:hover,
+.pronto-ab-content button:hover,
+.pronto-ab-content [role="button"]:hover {
+    transform: translateY(-1px);
+}
+
+.pronto-ab-content a:active,
+.pronto-ab-content button:active,
+.pronto-ab-content [role="button"]:active {
+    transform: translateY(0);
+}
+
+/* =================================
+     ACCESSIBILITY IMPROVEMENTS
+     ================================= */
+
+/* Ensure good contrast for all text content */
+.pronto-ab-content {
+    /* Inherit parent text color but ensure readability */
+    color: inherit;
+}
+
+/* Focus styles for keyboard navigation */
+.pronto-ab-content a:focus,
+.pronto-ab-content button:focus,
+.pronto-ab-content [role="button"]:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+/* Screen reader friendly variation labels */
+.pronto-ab-content .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* =================================
+     COMMON LAYOUT FIXES
+     ================================= */
+
+/* Prevent margin collapse issues */
+.pronto-ab-content:first-child {
+    margin-top: 0;
+}
+
+.pronto-ab-content:last-child {
+    margin-bottom: 0;
+}
+
+/* Clear floats */
+.pronto-ab-content::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* =================================
+     THEME COMPATIBILITY
+     ================================= */
+
+/* Reset styles that might interfere with theme styles */
+.pronto-ab-content {
+    /* Don't inherit problematic properties */
+    text-transform: none;
+    letter-spacing: normal;
+    word-spacing: normal;
+}
+
+/* Ensure buttons and links maintain theme styling */
+.pronto-ab-content a {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.pronto-ab-content button {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* =================================
+     LOADING STATES
+     ================================= */
+
+/* Loading state for dynamic content */
+.pronto-ab-loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.pronto-ab-loading::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: abTestSpin 1s linear infinite;
+    z-index: 1000;
+}
+
+@keyframes abTestSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* =================================
+     PRINT STYLES
+     ================================= */
+
+@media print {
+
+    /* Hide debug information in print */
+    .pronto-ab-debug,
+    .pronto-ab-error {
+        display: none !important;
+    }
+
+    /* Ensure content prints properly */
+    .pronto-ab-content {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Remove admin indicators */
+    .admin-bar .pronto-ab-content::before,
+    .admin-bar .pronto-ab-content::after {
+        display: none !important;
+    }
+}
