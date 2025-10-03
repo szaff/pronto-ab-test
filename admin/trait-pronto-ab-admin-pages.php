@@ -92,6 +92,9 @@ trait Pronto_AB_Admin_Pages
                                     <th class="manage-column sortable">
                                         <a href="#"><span><?php esc_html_e('Performance', 'pronto-ab'); ?></span></a>
                                     </th>
+                                    <th class="manage-column sortable">
+                                        <a href="#"><span><?php esc_html_e('Significance', 'pronto-ab'); ?></span></a>
+                                    </th>
                                     <th class="manage-column"><?php esc_html_e('Actions', 'pronto-ab'); ?></th>
                                 </tr>
                             </thead>
@@ -196,6 +199,13 @@ trait Pronto_AB_Admin_Pages
                                 <?php $this->render_campaign_stats_box($campaign); ?>
                             <?php endif; ?>
 
+                            <!-- Statistical Significance -->
+                            <?php if ($campaign_id): ?>
+                                <?php $this->render_statistics_box($campaign_id); ?>
+                            <?php endif; ?>
+
+
+
                             <!-- Quick Actions Box -->
                             <?php if ($campaign_id): ?>
                                 <?php $this->render_quick_actions_box($campaign); ?>
@@ -291,6 +301,9 @@ trait Pronto_AB_Admin_Pages
                 <?php else: ?>
                     <span style="color: #999;" class="no-data"><?php esc_html_e('No data yet', 'pronto-ab'); ?></span>
                 <?php endif; ?>
+            </td>
+            <td class="campaign-significance">
+                <?php $this->render_statistics_badge($campaign->id); ?>
             </td>
             <td class="campaign-actions">
                 <?php $this->render_campaign_actions($campaign); ?>

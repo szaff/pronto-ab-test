@@ -26,6 +26,7 @@
       ajaxUrl: abTestAjax.ajax_url,
       nonce: abTestAjax.nonce,
       strings: abTestAjax.strings || {},
+      debug: abTestAjax.debug || false,
     },
 
     // State tracking
@@ -39,7 +40,7 @@
         return;
       }
 
-      console.log("Initializing Pronto A/B Admin");
+      this.log("Initializing Pronto A/B Admin");
 
       // Initialize different admin page functionalities
       this.initCampaignsList();
@@ -48,9 +49,21 @@
       this.initFormValidation();
       this.initBulkActions();
       this.initRealTimeStats();
+      this.initStatisticsRefresh();
 
       this.isInitialized = true;
-      console.log("Pronto A/B Admin initialized successfully");
+      this.log("Pronto A/B Admin initialized successfully");
+    },
+
+    /**
+     * Debug logging
+     */
+    log: function () {
+      if (this.config.debug && console && console.log) {
+        const args = Array.prototype.slice.call(arguments);
+        args.unshift("[Pronto A/B]");
+        console.log.apply(console, args);
+      }
     },
 
     /**
@@ -115,7 +128,7 @@
       // Traffic split visualization
       this.initTrafficSplitVisualizer();
 
-      console.log("Campaign editor initialized");
+      this.log("Campaign editor initialized");
     },
 
     /**
@@ -286,7 +299,7 @@
           }
         })
         .fail(function () {
-          console.log("Auto-save failed");
+          ProntoABAdmin.log("Auto-save failed");
         });
     },
 
@@ -321,6 +334,11 @@
       }).done(function (response) {
         if (response.success) {
           ProntoABAdmin.renderUpdatedStats(response.data);
+
+          // Also refresh statistics significance box if it exists
+          if ($(".pab-statistics-box").length > 0) {
+            ProntoABAdmin.refreshStatistics(null, true); // Silent refresh
+          }
         }
       });
     },
@@ -670,7 +688,7 @@
         nonce: this.config.nonce,
       }).done(function (response) {
         if (response.success) {
-          console.log("Weight saved successfully");
+          ProntoABAdmin.log("Weight saved successfully");
         }
       });
     },
@@ -725,6 +743,124 @@
           ProntoABAdmin.showNotice("error", "Failed to delete variation");
         });
     },
+
+    /**
+     * Initialize statistics refresh functionality
+     */
+    initStatisticsRefresh: function () {
+      const self = this;
+
+      // Only initialize if statistics box exists on page
+      if (!$(".pab-statistics-box").length) {
+        return;
+      }
+
+      self.log("Initializing statistics refresh");
+
+      // Handle manual refresh button click
+      $(document).on("click", ".pab-refresh-stats", function (e) {
+        e.preventDefault();
+        self.refreshStatistics($(this));
+      });
+
+      // Optional: Auto-refresh every 30 seconds
+      const autoRefresh = this.config.strings.auto_refresh_stats !== false;
+      if (autoRefresh) {
+        setInterval(function () {
+          if ($(".pab-statistics-box").length > 0) {
+            self.refreshStatistics(null, true); // true = silent refresh
+          }
+        }, 30000); // 30 seconds
+      }
+    },
+
+    /**
+     * Refresh campaign statistics via AJAX
+     *
+     * @param {jQuery} $button - The button element (if manually triggered)
+     * @param {boolean} silent - If true, don't show loading state
+     */
+    refreshStatistics: function ($button, silent) {
+      const self = this;
+      const campaignId = $('input[name="campaign_id"]').val();
+
+      if (!campaignId) {
+        self.log("No campaign ID found for statistics refresh");
+        return;
+      }
+
+      // Store original button state
+      let originalText = "";
+      if ($button && !silent) {
+        originalText = $button.text();
+        $button
+          .prop("disabled", true)
+          .html(
+            '<span class="dashicons dashicons-update" style="animation: rotation 1s infinite linear;"></span> ' +
+              (this.config.strings.refreshing || "Refreshing...")
+          );
+      }
+
+      $.ajax({
+        url: this.config.ajaxUrl,
+        type: "POST",
+        data: {
+          action: "pronto_ab_refresh_statistics",
+          campaign_id: campaignId,
+          nonce: this.config.nonce,
+        },
+        success: function (response) {
+          if (response.success && response.data.html) {
+            // Replace the entire statistics box with fresh HTML
+            $(".pab-statistics-box").replaceWith(response.data.html);
+
+            // Show success message (if not silent)
+            if (!silent) {
+              self.showNotice(
+                "success",
+                self.config.strings.stats_refreshed || "Statistics refreshed!",
+                3000
+              );
+            }
+
+            // Log the update
+            self.log(
+              "Statistics refreshed successfully",
+              response.data.timestamp
+            );
+
+            // Trigger custom event for other scripts to hook into
+            $(document).trigger("prontoAB:statsRefreshed", [response.data]);
+          } else {
+            self.showNotice(
+              "error",
+              response.data || "Failed to refresh statistics"
+            );
+            self.log("Statistics refresh failed", response);
+          }
+        },
+        error: function (xhr, status, error) {
+          if (!silent) {
+            self.showNotice(
+              "error",
+              self.config.strings.error || "Error refreshing statistics"
+            );
+          }
+          self.log("AJAX error refreshing statistics:", error);
+        },
+        complete: function () {
+          // Restore button state
+          if ($button && !silent) {
+            $button
+              .prop("disabled", false)
+              .html(
+                '<span class="dashicons dashicons-update"></span> ' +
+                  originalText
+              );
+          }
+        },
+      });
+    },
   };
 
   /**
@@ -738,3 +874,26 @@
   // Make ProntoABAdmin globally available for debugging
   window.ProntoABAdmin = ProntoABAdmin;
 })(jQuery);
+
+/**
+ * Add CSS animation for rotating refresh icon
+ */
+jQuery(document).ready(function ($) {
+  if (!document.getElementById("pab-admin-animations")) {
+    $("head").append(`
+            <style id="pab-admin-animations">
+                @keyframes rotation {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .pab-refresh-stats .dashicons {
+                    margin-top: 3px;
+                    transition: transform 0.3s ease;
+                }
+                .pab-refresh-stats:hover .dashicons {
+                    transform: scale(1.1);
+                }
+            </style>
+        `);
+  }
+});

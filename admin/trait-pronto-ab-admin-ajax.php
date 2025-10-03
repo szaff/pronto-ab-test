@@ -379,4 +379,42 @@ trait Pronto_AB_Admin_Ajax
             wp_send_json_error(__('Failed to delete campaign', 'pronto-ab'));
         }
     }
+
+    /**
+     * Handle AJAX request for statistics refresh
+     */
+    /**
+     * AJAX: Refresh statistics for a campaign
+     */
+    public function ajax_refresh_statistics()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+
+        if (!$campaign_id) {
+            wp_send_json_error(__('Campaign ID is required', 'pronto-ab'));
+        }
+
+        // Clear any cached statistics
+        delete_transient('pab_stats_' . $campaign_id);
+
+        // Get fresh statistics
+        $metrics = Pronto_AB_Statistics::calculate_campaign_metrics($campaign_id);
+
+        // Render HTML
+        ob_start();
+        $this->render_statistics_box($campaign_id);
+        $html = ob_get_clean();
+
+        wp_send_json_success(array(
+            'metrics' => $metrics,
+            'html' => $html,
+            'timestamp' => current_time('mysql')
+        ));
+    }
 }

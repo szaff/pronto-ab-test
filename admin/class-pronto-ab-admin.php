@@ -14,6 +14,7 @@ require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-pages.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-forms.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-ajax.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-helpers.php';
+require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-statistics.php';
 
 class Pronto_AB_Admin
 {
@@ -21,6 +22,7 @@ class Pronto_AB_Admin
     use Pronto_AB_Admin_Forms;
     use Pronto_AB_Admin_Ajax;
     use Pronto_AB_Admin_Helpers;
+    use Pronto_AB_Admin_Statistics;
 
     /**
      * Constructor
@@ -104,6 +106,17 @@ class Pronto_AB_Admin
             'pronto-abs-settings',
             array($this, 'settings_page')
         );
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            add_submenu_page(
+                'pronto-abs',
+                __('Test Data Generator', 'pronto-ab'),
+                __('Test Data', 'pronto-ab'),
+                'manage_options',
+                'pronto-abs-test-data',
+                array('Pronto_AB_Test_Data_Generator', 'render_admin_page')
+            );
+        }
 
         error_log("Pronto A/B Debug: All submenus added");
         error_log("Pronto A/B Debug: Current user can manage_options: " . (current_user_can('manage_options') ? 'YES' : 'NO'));
@@ -198,7 +211,10 @@ class Pronto_AB_Admin
                 'error_loading' => __('Error loading posts', 'pronto-ab'),
                 'remove' => __('Remove', 'pronto-ab'),
                 'unsaved_changes' => __('You have unsaved changes. Are you sure you want to leave?', 'pronto-ab'),
-                'validation_errors' => __('Please fix the following errors:', 'pronto-ab')
+                'validation_errors' => __('Please fix the following errors:', 'pronto-ab'),
+                'refreshing' => __('Refreshing...', 'pronto-ab'),
+                'stats_refreshed' => __('Statistics refreshed!', 'pronto-ab'),
+                'auto_refresh_stats' => true, // Set to false to disable auto-refresh
             ),
             'settings' => array(
                 'autosave_interval' => 30000,
@@ -515,7 +531,10 @@ class Pronto_AB_Admin
 
             // Enhanced features
             'pronto_ab_validate_campaign',
-            'pronto_ab_export_data'
+            'pronto_ab_export_data',
+
+            // Statistics feature
+            'pronto_ab_refresh_statistics'
         );
 
         foreach ($ajax_handlers as $handler) {
