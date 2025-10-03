@@ -60,7 +60,7 @@ trait Pronto_AB_Admin_Statistics
 
             .pab-variation-comparison {
                 margin: 20px 0;
-                padding: 15px;
+                padding: 16px;
                 background: #f9f9f9;
                 border-left: 4px solid #ddd;
             }
@@ -74,7 +74,7 @@ trait Pronto_AB_Admin_Statistics
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 15px;
+                margin-bottom: 16px;
             }
 
             .pab-comparison-title {
@@ -110,15 +110,14 @@ trait Pronto_AB_Admin_Statistics
             .pab-metrics-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin: 15px 0;
+                gap: 16px;
+                margin: 16px 0;
             }
 
             .pab-metric-card {
                 background: #fff;
-                padding: 15px;
-                border-radius: 4px;
-                border: 1px solid #ddd;
+                padding: 16px;
+                border-radius: 8px;
             }
 
             .pab-metric-label {
@@ -152,7 +151,7 @@ trait Pronto_AB_Admin_Statistics
                 padding: 12px;
                 background: #fff;
                 border-left: 3px solid #2271b1;
-                margin: 15px 0;
+                margin: 16px 0;
                 font-size: 14px;
             }
 
@@ -160,7 +159,7 @@ trait Pronto_AB_Admin_Statistics
                 padding: 12px;
                 background: #fff3cd;
                 border-left: 3px solid #ffb900;
-                margin: 15px 0;
+                margin: 16px 0;
             }
 
             .pab-data-warnings ul {
@@ -184,7 +183,7 @@ trait Pronto_AB_Admin_Statistics
 
             .pab-stats-footer {
                 margin-top: 20px;
-                padding-top: 15px;
+                padding-top: 16px;
                 border-top: 1px solid #eee;
             }
 
@@ -204,8 +203,126 @@ trait Pronto_AB_Admin_Statistics
                 content: "🏆";
                 margin-right: 6px;
             }
+
+            .pab-metric-card {
+                cursor: help;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .pab-metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .pab-metric-label .dashicons-info {
+                vertical-align: middle;
+                margin-left: 4px;
+                opacity: 0.6;
+            }
+
+            .pab-metric-label:hover .dashicons-info {
+                opacity: 1;
+            }
+
+            .pab-metric-subtitle {
+                cursor: help;
+            }
+
+            /* Tooltip Styles */
+            .pab-has-tooltip {
+                position: relative;
+            }
+
+            .pab-tooltip {
+                visibility: hidden;
+                opacity: 0;
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%) translateY(-5px);
+                background: #1d2327;
+                color: #fff;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 13px;
+                line-height: 1.4;
+                white-space: normal;
+                width: 220px;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                pointer-events: none;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+                margin-bottom: 8px;
+            }
+
+            .pab-tooltip::after {
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 6px solid transparent;
+                border-top-color: #1d2327;
+            }
+
+            .pab-tooltip-small {
+                width: 180px;
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .pab-has-tooltip:hover .pab-tooltip {
+                visibility: visible;
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            .pab-metric-card {
+                position: relative;
+                cursor: help;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .pab-metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .pab-metric-label {
+                display: flex;
+                justify-content: space-between;
+                gap: 4px;
+                margin-bottom: 16px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #ccc;
+            }
+
+            .pab-metric-label .dashicons-info {
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+                color: #2271b1;
+                opacity: 0.7;
+                transition: opacity 0.2s ease;
+            }
+
+            .pab-metric-card:hover .dashicons-info {
+                opacity: 1;
+            }
+
+            .pab-metric-subtitle {
+                position: relative;
+                cursor: help;
+            }
+
+            .pab-metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin: 16px 0;
+            }
         </style>
-    <?php
+        <?php
     }
 
     /**
@@ -217,28 +334,46 @@ trait Pronto_AB_Admin_Statistics
     {
         $stats = $result['stats'];
         $data_check = $result['data_check'];
-        $is_significant = $stats['is_significant'];
+
+        // Check if there's an error in stats calculation
+        if (isset($stats['error'])) {
+        ?>
+            <div class="pab-variation-comparison">
+                <div class="pab-comparison-header">
+                    <h4 class="pab-comparison-title">
+                        <?php echo esc_html($result['variation_name']); ?> vs <?php echo esc_html($result['control_name']); ?>
+                    </h4>
+                </div>
+                <div class="notice notice-warning inline">
+                    <p><?php echo esc_html($stats['error']); ?></p>
+                </div>
+            </div>
+        <?php
+            return;
+        }
+
+        $is_significant = isset($stats['is_significant']) ? $stats['is_significant'] : false;
 
         $confidence_class = 'low';
-        if ($stats['confidence_99']) {
+        if (isset($stats['confidence_99']) && $stats['confidence_99']) {
             $confidence_class = 'high';
-        } elseif ($stats['confidence_95']) {
+        } elseif (isset($stats['confidence_95']) && $stats['confidence_95']) {
             $confidence_class = 'high';
-        } elseif ($stats['confidence_90']) {
+        } elseif (isset($stats['confidence_90']) && $stats['confidence_90']) {
             $confidence_class = 'medium';
         }
 
-    ?>
+        ?>
         <div class="pab-variation-comparison <?php echo $is_significant ? 'significant' : ''; ?>">
             <div class="pab-comparison-header">
                 <h4 class="pab-comparison-title">
                     <?php echo esc_html($result['variation_name']); ?> vs <?php echo esc_html($result['control_name']); ?>
-                    <?php if ($stats['winner'] === 'b'): ?>
+                    <?php if (isset($stats['winner']) && $stats['winner'] === 'b'): ?>
                         <span class="pab-winner-badge"><?php _e('Winner', 'pronto-ab'); ?></span>
                     <?php endif; ?>
                 </h4>
                 <span class="pab-confidence-badge <?php echo $confidence_class; ?>">
-                    <?php echo esc_html($stats['confidence_level']); ?> <?php _e('Confidence', 'pronto-ab'); ?>
+                    <?php echo esc_html($stats['confidence_level'] ?? 'Not significant'); ?> <?php _e('Confidence', 'pronto-ab'); ?>
                 </span>
             </div>
 
@@ -254,45 +389,74 @@ trait Pronto_AB_Admin_Statistics
             <?php endif; ?>
 
             <div class="pab-metrics-grid">
-                <div class="pab-metric-card">
-                    <div class="pab-metric-label"><?php _e('Conversion Rate A', 'pronto-ab'); ?></div>
-                    <div class="pab-metric-value"><?php echo esc_html($stats['conversion_rate_a']); ?>%</div>
-                    <div class="pab-metric-subtitle">
-                        <?php printf(
-                            __('CI: %s%% - %s%%', 'pronto-ab'),
-                            $stats['confidence_interval_a']['lower'],
-                            $stats['confidence_interval_a']['upper']
-                        ); ?>
+                <div class="pab-metric-card pab-has-tooltip">
+                    <div class="pab-metric-label">
+                        <?php printf(__('Conversion Rate: %s', 'pronto-ab'), esc_html($result['control_name'])); ?>
+                        <span class="dashicons dashicons-info"></span>
                     </div>
+                    <div class="pab-tooltip">
+                        <?php _e('The percentage of visitors who completed the desired action. The CI (Confidence Interval) below shows the range where the true conversion rate likely falls with 95% certainty.', 'pronto-ab'); ?>
+                    </div>
+                    <div class="pab-metric-value"><?php echo esc_html($stats['conversion_rate_a'] ?? '0.00'); ?>%</div>
+                    <?php if (isset($stats['confidence_interval_a'])): ?>
+                        <div class="pab-metric-subtitle">
+                            <?php printf(
+                                __('CI: %s%% - %s%%', 'pronto-ab'),
+                                $stats['confidence_interval_a']['lower'] ?? '0',
+                                $stats['confidence_interval_a']['upper'] ?? '0'
+                            ); ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
-                <div class="pab-metric-card">
-                    <div class="pab-metric-label"><?php _e('Conversion Rate B', 'pronto-ab'); ?></div>
-                    <div class="pab-metric-value"><?php echo esc_html($stats['conversion_rate_b']); ?>%</div>
-                    <div class="pab-metric-subtitle">
-                        <?php printf(
-                            __('CI: %s%% - %s%%', 'pronto-ab'),
-                            $stats['confidence_interval_b']['lower'],
-                            $stats['confidence_interval_b']['upper']
-                        ); ?>
+                <div class="pab-metric-card pab-has-tooltip">
+                    <div class="pab-metric-label">
+                        <?php printf(__('Conversion Rate: %s', 'pronto-ab'), esc_html($result['variation_name'])); ?>
+                        <span class="dashicons dashicons-info"></span>
                     </div>
+                    <div class="pab-tooltip">
+                        <?php _e('The percentage of visitors who completed the desired action. The CI (Confidence Interval) below shows the range where the true conversion rate likely falls with 95% certainty.', 'pronto-ab'); ?>
+                    </div>
+                    <div class="pab-metric-value"><?php echo esc_html($stats['conversion_rate_b'] ?? '0.00'); ?>%</div>
+                    <?php if (isset($stats['confidence_interval_b'])): ?>
+                        <div class="pab-metric-subtitle">
+                            <?php printf(
+                                __('CI: %s%% - %s%%', 'pronto-ab'),
+                                $stats['confidence_interval_b']['lower'] ?? '0',
+                                $stats['confidence_interval_b']['upper'] ?? '0'
+                            ); ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
-                <div class="pab-metric-card">
-                    <div class="pab-metric-label"><?php _e('Lift', 'pronto-ab'); ?></div>
-                    <div class="pab-metric-value <?php echo $stats['lift'] > 0 ? 'positive' : 'negative'; ?>">
-                        <?php echo $stats['lift'] > 0 ? '+' : ''; ?><?php echo esc_html($stats['lift']); ?>%
+                <div class="pab-metric-card pab-has-tooltip">
+                    <div class="pab-metric-label">
+                        <?php _e('Lift', 'pronto-ab'); ?>
+                        <span class="dashicons dashicons-info"></span>
+                    </div>
+                    <div class="pab-tooltip">
+                        <?php _e('The percentage improvement (or decline) in conversion rate compared to the control. Positive lift means the variation performs better.', 'pronto-ab'); ?>
+                    </div>
+                    <?php $lift = $stats['lift'] ?? 0; ?>
+                    <div class="pab-metric-value <?php echo $lift > 0 ? 'positive' : 'negative'; ?>">
+                        <?php echo $lift > 0 ? '+' : ''; ?><?php echo esc_html(number_format($lift, 2)); ?>%
                     </div>
                     <div class="pab-metric-subtitle">
                         <?php _e('Relative improvement', 'pronto-ab'); ?>
                     </div>
                 </div>
 
-                <div class="pab-metric-card">
-                    <div class="pab-metric-label"><?php _e('P-Value', 'pronto-ab'); ?></div>
-                    <div class="pab-metric-value"><?php echo esc_html($stats['p_value']); ?></div>
+                <div class="pab-metric-card pab-has-tooltip">
+                    <div class="pab-metric-label">
+                        <?php _e('P-Value', 'pronto-ab'); ?>
+                        <span class="dashicons dashicons-info"></span>
+                    </div>
+                    <div class="pab-tooltip">
+                        <?php _e('The probability that the observed difference occurred by random chance. Values below 0.05 indicate the difference is statistically significant and likely real.', 'pronto-ab'); ?>
+                    </div>
+                    <div class="pab-metric-value"><?php echo esc_html($stats['p_value'] ?? 'N/A'); ?></div>
                     <div class="pab-metric-subtitle">
-                        <?php _e('Lower is better', 'pronto-ab'); ?>
+                        <?php _e('< 0.05 is significant', 'pronto-ab'); ?>
                     </div>
                 </div>
             </div>
@@ -325,7 +489,7 @@ trait Pronto_AB_Admin_Statistics
             <?php endif; ?>
 
             <?php if (isset($stats['sample_size_recommendation'])): ?>
-                <div style="margin-top: 15px; padding: 10px; background: #f0f0f1; border-radius: 4px;">
+                <div style="margin-top: 16px; padding: 10px; background: #fff; border-radius: 4px;">
                     <small>
                         <strong><?php _e('Recommendation:', 'pronto-ab'); ?></strong>
                         <?php printf(

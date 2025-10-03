@@ -410,30 +410,25 @@ trait Pronto_AB_Admin_Forms
                     <?php if (!empty($variations) && (int)$stats['impressions'] > 0): ?>
                         <div class="variations-performance">
                             <h4><?php esc_html_e('Variation Performance', 'pronto-ab'); ?></h4>
-                            <?php foreach ($variations as $variation): ?>
-                                <div class="variation-stat" data-variation="<?php echo esc_attr($variation->id); ?>">
-                                    <strong><?php echo esc_html($variation->name); ?></strong>
-                                    <?php if ($variation->is_control): ?>
-                                        <span class="control-badge"><?php esc_html_e('Control', 'pronto-ab'); ?></span>
-                                    <?php endif; ?>
-                                    <br>
-                                    <small>
-                                        <span class="variation-impressions"><?php echo number_format((int)$variation->impressions); ?></span> impressions,
-                                        <span class="variation-conversions"><?php echo number_format((int)$variation->conversions); ?></span> conversions
-                                        (<span class="variation-rate"><?php echo esc_html($variation->get_conversion_rate()); ?></span>%)
-                                    </small>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <!-- Statistical significance indicator -->
-                        <div class="statistical-significance">
-                            <h4><?php esc_html_e('Statistical Significance', 'pronto-ab'); ?></h4>
-                            <div id="significance-indicator">
-                                <span class="spinner is-active"></span>
-                                <span><?php esc_html_e('Calculating...', 'pronto-ab'); ?></span>
+                            <div class="variation-stat-grid">
+                                <?php foreach ($variations as $variation): ?>
+                                    <div class="variation-stat" data-variation="<?php echo esc_attr($variation->id); ?>">
+                                        <strong><?php echo esc_html($variation->name); ?></strong>
+                                        <?php if ($variation->is_control): ?>
+                                            <span class="control-badge"><?php esc_html_e('Control', 'pronto-ab'); ?></span>
+                                        <?php endif; ?>
+                                        <br>
+                                        <small>
+                                            <span class="variation-impressions"><?php echo number_format((int)$variation->impressions); ?></span> impressions,
+                                            <span class="variation-conversions"><?php echo number_format((int)$variation->conversions); ?></span> conversions
+                                            (<span class="variation-rate"><?php echo esc_html($variation->get_conversion_rate()); ?></span>%)
+                                        </small>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
+
+
                     <?php elseif (empty($variations)): ?>
                         <p class="no-variations"><?php esc_html_e('No variations created yet.', 'pronto-ab'); ?></p>
                     <?php else: ?>

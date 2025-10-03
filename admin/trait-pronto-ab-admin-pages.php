@@ -188,11 +188,7 @@ trait Pronto_AB_Admin_Pages
                                     <?php $this->render_variations_list($campaign); ?>
                                 </div>
                             </div>
-                        </div>
 
-                        <div id="postbox-container-1" class="postbox-container">
-                            <!-- Enhanced Publish Box -->
-                            <?php $this->render_publish_box($campaign); ?>
 
                             <!-- Campaign Statistics -->
                             <?php if ($campaign_id): ?>
@@ -204,7 +200,11 @@ trait Pronto_AB_Admin_Pages
                                 <?php $this->render_statistics_box($campaign_id); ?>
                             <?php endif; ?>
 
+                        </div>
 
+                        <div id="postbox-container-1" class="postbox-container">
+                            <!-- Enhanced Publish Box -->
+                            <?php $this->render_publish_box($campaign); ?>
 
                             <!-- Quick Actions Box -->
                             <?php if ($campaign_id): ?>
