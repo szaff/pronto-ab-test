@@ -370,13 +370,7 @@ trait Pronto_AB_Admin_Forms
     ?>
         <div class="postbox">
             <div class="postbox-header">
-                <h2>
-                    <?php esc_html_e('Campaign Statistics', 'pronto-ab'); ?>
-                    <button type="button" class="button-link refresh-stats" id="refresh-stats"
-                        title="<?php esc_attr_e('Refresh statistics', 'pronto-ab'); ?>">
-                        <span class="dashicons dashicons-update"></span>
-                    </button>
-                </h2>
+                <h2><?php esc_html_e('Campaign Statistics', 'pronto-ab'); ?></h2>
             </div>
             <div class="inside">
                 <div class="pronto-ab-stats" data-campaign-id="<?php echo esc_attr($campaign->id); ?>">

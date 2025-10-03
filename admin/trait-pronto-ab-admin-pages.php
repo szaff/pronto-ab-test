@@ -269,17 +269,29 @@ trait Pronto_AB_Admin_Pages
                 <?php endif; ?>
             </td>
             <td class="campaign-variations">
-                <strong><?php echo count($variations); ?></strong> <?php esc_html_e('variations', 'pronto-ab'); ?>
+                <strong><?php echo count($variations); ?></strong> <?php echo count($variations) === 1 ? __('variation', 'pronto-ab') : __('variations', 'pronto-ab'); ?>
                 <?php if (!empty($variations)): ?>
-                    <br><small class="variations-list">
-                        <?php foreach ($variations as $i => $variation): ?>
-                            <?php if ($i > 0) echo ', '; ?>
-                            <span class="variation-name<?php echo $variation->is_control ? ' control-variation' : ''; ?>">
+                    <?php $winning_variation_id = $this->get_winning_variation_id($campaign->id); ?>
+                    <div class="variations-list-compact">
+                        <?php foreach ($variations as $variation): ?>
+                            <?php
+                            $is_winner = ($winning_variation_id && $winning_variation_id === $variation->id);
+                            $winner_class = $is_winner ? ' variation-winner' : '';
+                            ?>
+                            <div class="variation-badge<?php echo $winner_class; ?>">
+                                <?php if ($is_winner): ?>
+                                    <span class="winner-icon">🏆</span>
+                                <?php endif; ?>
                                 <?php echo esc_html($variation->name); ?>
-                                <?php if ($variation->is_control) echo ' (Control)'; ?>
-                            </span>
+                                <?php if ($variation->is_control): ?>
+                                    <span class="badge-control"><?php esc_html_e('Control', 'pronto-ab'); ?></span>
+                                <?php endif; ?>
+                                <?php if ($is_winner): ?>
+                                    <span class="badge-winner"><?php esc_html_e('Winner', 'pronto-ab'); ?></span>
+                                <?php endif; ?>
+                            </div>
                         <?php endforeach; ?>
-                    </small>
+                    </div>
                 <?php endif; ?>
             </td>
             <td class="campaign-traffic"><?php echo esc_html($campaign->traffic_split); ?></td>
@@ -421,6 +433,39 @@ trait Pronto_AB_Admin_Pages
         }
 
         return $counts;
+    }
+
+    /**
+     * Get winning variation ID for a campaign if statistically significant
+     * 
+     * @param int $campaign_id Campaign ID
+     * @return int|null Winning variation ID or null
+     */
+    private function get_winning_variation_id($campaign_id)
+    {
+        $metrics = Pronto_AB_Statistics::calculate_campaign_metrics($campaign_id);
+
+        if (isset($metrics['error']) || empty($metrics)) {
+            return null;
+        }
+
+        // Find a variation with significant winner status
+        foreach ($metrics as $result) {
+            if (
+                isset($result['stats']['is_significant']) &&
+                $result['stats']['is_significant'] &&
+                isset($result['stats']['winner'])
+            ) {
+
+                // If winner is 'b', return the variation_id
+                // If winner is 'a', the control is winning
+                if ($result['stats']['winner'] === 'b') {
+                    return $result['variation_id'];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

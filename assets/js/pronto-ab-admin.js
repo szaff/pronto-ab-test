@@ -757,13 +757,7 @@
 
       self.log("Initializing statistics refresh");
 
-      // Handle manual refresh button click
-      $(document).on("click", ".pab-refresh-stats", function (e) {
-        e.preventDefault();
-        self.refreshStatistics($(this));
-      });
-
-      // Optional: Auto-refresh every 30 seconds
+      // Auto-refresh every 30 seconds
       const autoRefresh = this.config.strings.auto_refresh_stats !== false;
       if (autoRefresh) {
         setInterval(function () {
@@ -874,26 +868,3 @@
   // Make ProntoABAdmin globally available for debugging
   window.ProntoABAdmin = ProntoABAdmin;
 })(jQuery);
-
-/**
- * Add CSS animation for rotating refresh icon
- */
-jQuery(document).ready(function ($) {
-  if (!document.getElementById("pab-admin-animations")) {
-    $("head").append(`
-            <style id="pab-admin-animations">
-                @keyframes rotation {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-                .pab-refresh-stats .dashicons {
-                    margin-top: 3px;
-                    transition: transform 0.3s ease;
-                }
-                .pab-refresh-stats:hover .dashicons {
-                    transform: scale(1.1);
-                }
-            </style>
-        `);
-  }
-});
