@@ -20,7 +20,6 @@ trait Pronto_AB_Admin_Helpers
 
         // Validate required fields
         $campaign_name = sanitize_text_field($_POST['campaign_name'] ?? '');
-        error_log("Pronto A/B Debug: Campaign name: " . $campaign_name);
 
         if (empty($campaign_name)) {
             $errors[] = __('Campaign name is required', 'pronto-ab');
@@ -28,19 +27,16 @@ trait Pronto_AB_Admin_Helpers
 
         // Validate variations (skip for now since we're using custom post types)
         $variations_data = $_POST['variations'] ?? array();
-        error_log("Pronto A/B Debug: Variations data: " . print_r($variations_data, true));
 
         // Validate dates
         $start_date = $_POST['start_date'] ?? '';
         $end_date = $_POST['end_date'] ?? '';
-        error_log("Pronto A/B Debug: Start date: " . $start_date . ", End date: " . $end_date);
 
         if ($start_date && $end_date && strtotime($start_date) >= strtotime($end_date)) {
             $errors[] = __('End date must be after start date', 'pronto-ab');
         }
 
         if (!empty($errors)) {
-            error_log("Pronto A/B Debug: Validation errors: " . implode(', ', $errors));
             return array(
                 'success' => false,
                 'message' => implode('<br>', $errors)
@@ -49,7 +45,6 @@ trait Pronto_AB_Admin_Helpers
 
         // Check if database tables exist
         if (!$this->verify_database_tables()) {
-            error_log("Pronto A/B Debug: Database tables missing, creating them");
             Pronto_AB_Database::create_tables();
         }
 
@@ -63,14 +58,11 @@ trait Pronto_AB_Admin_Helpers
         $campaign->start_date = $start_date ? date('Y-m-d H:i:s', strtotime($start_date)) : null;
         $campaign->end_date = $end_date ? date('Y-m-d H:i:s', strtotime($end_date)) : null;
 
-        error_log("Pronto A/B Debug: About to save campaign with data: " . print_r($campaign, true));
 
         if ($campaign->save()) {
-            error_log("Pronto A/B Debug: Campaign saved successfully with ID: " . $campaign->id);
 
             // Save variations if provided
             if (!empty($variations_data)) {
-                error_log("Pronto A/B Debug: Saving variations");
                 $this->save_campaign_variations($campaign->id, $variations_data);
             }
 
@@ -107,7 +99,6 @@ trait Pronto_AB_Admin_Helpers
         $campaigns_table = Pronto_AB_Database::get_campaigns_table();
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$campaigns_table'") === $campaigns_table;
 
-        error_log("Pronto A/B Debug: Campaigns table exists: " . ($table_exists ? 'YES' : 'NO'));
 
         return $table_exists;
     }

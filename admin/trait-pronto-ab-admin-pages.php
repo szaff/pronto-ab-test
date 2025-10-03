@@ -116,33 +116,25 @@ trait Pronto_AB_Admin_Pages
      */
     public function campaign_edit_page()
     {
-        error_log("Pronto A/B Debug: campaign_edit_page() called");
 
         $campaign_id = isset($_GET['campaign_id']) ? intval($_GET['campaign_id']) : 0;
         $campaign = $campaign_id ? Pronto_AB_Campaign::find($campaign_id) : new Pronto_AB_Campaign();
         $variations = $campaign_id ? $campaign->get_variations() : array();
 
-        error_log("Pronto A/B Debug: Campaign ID: " . $campaign_id);
-        error_log("Pronto A/B Debug: POST data: " . print_r($_POST, true));
 
         // Handle form submission
         if (isset($_POST['save_campaign'])) {
-            error_log("Pronto A/B Debug: Form submitted with save_campaign");
 
             // Check nonce
             if (!wp_verify_nonce($_POST['_wpnonce'], 'pronto_ab_save_campaign')) {
-                error_log("Pronto A/B Debug: Nonce verification failed");
                 $this->add_admin_notice('error', __('Security check failed. Please try again.', 'pronto-ab'));
             } else {
-                error_log("Pronto A/B Debug: Nonce verified, processing form");
 
                 // Process the form
                 $result = $this->save_campaign_form($campaign);
 
-                error_log("Pronto A/B Debug: Save result: " . print_r($result, true));
 
                 if ($result['success']) {
-                    error_log("Pronto A/B Debug: Save successful, redirecting to: " . $result['redirect_url']);
                     wp_redirect($result['redirect_url']);
                     exit;
                 } else {
@@ -271,11 +263,17 @@ trait Pronto_AB_Admin_Pages
             <td class="campaign-variations">
                 <strong><?php echo count($variations); ?></strong> <?php echo count($variations) === 1 ? __('variation', 'pronto-ab') : __('variations', 'pronto-ab'); ?>
                 <?php if (!empty($variations)): ?>
-                    <?php $winning_variation_id = $this->get_winning_variation_id($campaign->id); ?>
+                    <?php
+                    $winner_info = $this->get_winning_variation_id($campaign->id);
+                    ?>
                     <div class="variations-list-compact">
                         <?php foreach ($variations as $variation): ?>
                             <?php
-                            $is_winner = ($winning_variation_id && $winning_variation_id === $variation->id);
+                            $is_winner = false;
+                            if ($winner_info && isset($winner_info['id'])) {
+                                // Cast both to int for comparison
+                                $is_winner = (int)$winner_info['id'] === (int)$variation->id;
+                            }
                             $winner_class = $is_winner ? ' variation-winner' : '';
                             ?>
                             <div class="variation-badge<?php echo $winner_class; ?>">
@@ -439,7 +437,13 @@ trait Pronto_AB_Admin_Pages
      * Get winning variation ID for a campaign if statistically significant
      * 
      * @param int $campaign_id Campaign ID
-     * @return int|null Winning variation ID or null
+     * @return array|null Array with 'id' and 'is_control' or null
+     */
+    /**
+     * Get winning variation ID for a campaign if statistically significant
+     * 
+     * @param int $campaign_id Campaign ID
+     * @return array|null Array with 'id' and 'is_control' or null
      */
     private function get_winning_variation_id($campaign_id)
     {
@@ -449,6 +453,9 @@ trait Pronto_AB_Admin_Pages
             return null;
         }
 
+        global $wpdb;
+        $table = Pronto_AB_Database::get_variations_table();
+
         // Find a variation with significant winner status
         foreach ($metrics as $result) {
             if (
@@ -456,11 +463,27 @@ trait Pronto_AB_Admin_Pages
                 $result['stats']['is_significant'] &&
                 isset($result['stats']['winner'])
             ) {
-
-                // If winner is 'b', return the variation_id
-                // If winner is 'a', the control is winning
+                // Return winner info based on who won
                 if ($result['stats']['winner'] === 'b') {
-                    return $result['variation_id'];
+                    // Variation B (the tested variation) won
+                    return array(
+                        'id' => $result['variation_id'],
+                        'is_control' => false
+                    );
+                } elseif ($result['stats']['winner'] === 'a') {
+                    // Control (variation A) won - find it by name from the result
+                    $control = $wpdb->get_row($wpdb->prepare(
+                        "SELECT id, is_control FROM $table WHERE campaign_id = %d AND name = %s LIMIT 1",
+                        $campaign_id,
+                        $result['control_name']  // Use the control name from stats
+                    ));
+
+                    if ($control) {
+                        return array(
+                            'id' => $control->id,
+                            'is_control' => (bool)$control->is_control
+                        );
+                    }
                 }
             }
         }

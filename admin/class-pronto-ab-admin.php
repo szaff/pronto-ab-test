@@ -29,7 +29,6 @@ class Pronto_AB_Admin
      */
     public function __construct()
     {
-        error_log("Pronto A/B Debug: Admin constructor called");
         $this->init_hooks();
     }
 
@@ -55,7 +54,6 @@ class Pronto_AB_Admin
      */
     public function add_admin_menu()
     {
-        error_log("Pronto A/B Debug: add_admin_menu() called");
 
         // Main menu page
         $main_page = add_menu_page(
@@ -68,7 +66,6 @@ class Pronto_AB_Admin
             25
         );
 
-        error_log("Pronto A/B Debug: Main menu page added: " . $main_page);
 
         // Submenu pages
         $submenu_1 = add_submenu_page(
@@ -117,9 +114,6 @@ class Pronto_AB_Admin
                 array('Pronto_AB_Test_Data_Generator', 'render_admin_page')
             );
         }
-
-        error_log("Pronto A/B Debug: All submenus added");
-        error_log("Pronto A/B Debug: Current user can manage_options: " . (current_user_can('manage_options') ? 'YES' : 'NO'));
     }
 
     /**
@@ -171,7 +165,6 @@ class Pronto_AB_Admin
             return;
         }
 
-        error_log("Pronto A/B Debug: Loading admin assets for hook: " . $hook);
 
         // Core WordPress UI components
         wp_enqueue_script('jquery-ui-sortable');
@@ -223,8 +216,6 @@ class Pronto_AB_Admin
             ),
             'debug' => defined('WP_DEBUG') && WP_DEBUG
         ));
-
-        error_log("Pronto A/B Debug: Admin assets loaded successfully");
     }
 
     /**

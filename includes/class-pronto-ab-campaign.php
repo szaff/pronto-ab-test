@@ -86,9 +86,6 @@ class Pronto_AB_Campaign
     {
         global $wpdb;
 
-        error_log("Pronto A/B Debug: Campaign save() method called");
-        error_log("Pronto A/B Debug: Campaign ID: " . ($this->id ?? 'NEW'));
-        error_log("Pronto A/B Debug: Campaign name: " . ($this->name ?? 'EMPTY'));
 
         // Verify table exists
         $table = Pronto_AB_Database::get_campaigns_table();
@@ -113,11 +110,9 @@ class Pronto_AB_Campaign
 
         $formats = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d');
 
-        error_log("Pronto A/B Debug: Data to save: " . print_r($data, true));
 
         if ($this->id) {
             // Update existing campaign
-            error_log("Pronto A/B Debug: Updating existing campaign ID: " . $this->id);
 
             $result = $wpdb->update(
                 $table,
@@ -127,14 +122,12 @@ class Pronto_AB_Campaign
                 array('%d')
             );
 
-            error_log("Pronto A/B Debug: Update result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
             if ($result === false) {
                 error_log("Pronto A/B Debug: Update error: " . $wpdb->last_error);
                 error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
             }
         } else {
             // Create new campaign
-            error_log("Pronto A/B Debug: Creating new campaign");
 
             $result = $wpdb->insert(
                 $table,
@@ -142,7 +135,6 @@ class Pronto_AB_Campaign
                 $formats
             );
 
-            error_log("Pronto A/B Debug: Insert result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
             if ($result === false) {
                 error_log("Pronto A/B Debug: Insert error: " . $wpdb->last_error);
                 error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
@@ -150,7 +142,6 @@ class Pronto_AB_Campaign
 
             if ($result) {
                 $this->id = $wpdb->insert_id;
-                error_log("Pronto A/B Debug: New campaign ID: " . $this->id);
             }
         }
 
