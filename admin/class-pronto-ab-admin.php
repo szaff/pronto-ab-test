@@ -15,6 +15,7 @@ require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-forms.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-ajax.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-helpers.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-statistics.php';
+require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-analytics.php';
 
 class Pronto_AB_Admin
 {
@@ -23,6 +24,7 @@ class Pronto_AB_Admin
     use Pronto_AB_Admin_Ajax;
     use Pronto_AB_Admin_Helpers;
     use Pronto_AB_Admin_Statistics;
+    use Pronto_AB_Admin_Analytics;
 
     /**
      * Constructor
@@ -179,6 +181,15 @@ class Pronto_AB_Admin
             PAB_VERSION
         );
 
+        if ($hook === 'a-b-tests_page_pronto-abs-analytics') {
+            wp_enqueue_style(
+                'pronto-ab-analytics',
+                PAB_ASSETS_URL . 'css/pronto-ab-analytics.css',
+                array(),
+                PAB_VERSION
+            );
+        }
+
         // Plugin admin scripts  
         wp_enqueue_script(
             'pronto-ab-admin',
@@ -187,6 +198,32 @@ class Pronto_AB_Admin
             PAB_VERSION,
             true
         );
+
+        if ($hook === 'a-b-tests_page_pronto-abs-analytics') {
+            wp_enqueue_script(
+                'chartjs',
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+                array(),
+                '4.4.0',
+                true
+            );
+
+            wp_enqueue_script(
+                'chartjs-adapter-date-fns',
+                'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js',
+                array('chartjs'),
+                '3.0.0',
+                true
+            );
+
+            wp_enqueue_script(
+                'pronto-ab-analytics',
+                PAB_ASSETS_URL . 'js/pronto-ab-analytics.js',
+                array('jquery', 'chartjs'),
+                PAB_VERSION,
+                true
+            );
+        }
 
         // Enhanced localization
         wp_localize_script('pronto-ab-admin', 'abTestAjax', array(
@@ -299,21 +336,9 @@ class Pronto_AB_Admin
                 <?php submit_button(__('Save Settings', 'pronto-ab'), 'primary', 'save_settings'); ?>
             </form>
         </div>
-    <?php
-    }
-
-    /**
-     * Analytics page
-     */
-    public function analytics_page()
-    {
-    ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('A/B Test Analytics', 'pronto-ab'); ?></h1>
-            <p><?php esc_html_e('Detailed analytics and reporting will be implemented here.', 'pronto-ab'); ?></p>
-        </div>
 <?php
     }
+
 
     /**
      * AJAX: Save variation weights
