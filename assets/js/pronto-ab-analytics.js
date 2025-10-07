@@ -54,6 +54,10 @@
 
             // Time Series Chart
             this.renderTimeSeriesChart();
+
+            // Goal Charts
+            this.renderGoalConversionChart();
+            this.renderGoalRevenueChart();
         },
 
         /**
@@ -203,6 +207,156 @@
             });
 
             console.log('Time series chart rendered');
+        },
+
+        /**
+         * Render goal conversion rate chart
+         */
+        renderGoalConversionChart: function () {
+            const ctx = document.getElementById('goal-conversion-chart');
+            if (!ctx) {
+                console.log('Goal conversion chart canvas not found - skipping');
+                return;
+            }
+
+            const data = prontoAbAnalyticsData.variations;
+
+            // Check if there are any goals
+            if (!data[0] || !data[0].goal_stats || data[0].goal_stats.length === 0) {
+                console.log('No goal data available');
+                return;
+            }
+
+            const labels = data.map(v => v.name);
+            const goalConversionRates = data.map(v => v.goal_conversion_rate);
+
+            const backgroundColors = data.map(v => {
+                if (v.is_winner) return 'rgba(140, 200, 75, 0.8)';
+                if (v.is_control) return 'rgba(75, 140, 200, 0.8)';
+                return 'rgba(150, 150, 150, 0.6)';
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Goal Conversion Rate (%)',
+                        data: goalConversionRates,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.8', '1').replace('0.6', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const variation = data[context.dataIndex];
+                                    return [
+                                        'Goal Conversion Rate: ' + context.parsed.y.toFixed(2) + '%',
+                                        'Goal Conversions: ' + variation.goal_conversions,
+                                        'Total Impressions: ' + variation.impressions
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Goal Conversion Rate (%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log('Goal conversion chart rendered');
+        },
+
+        /**
+         * Render goal revenue chart
+         */
+        renderGoalRevenueChart: function () {
+            const ctx = document.getElementById('goal-revenue-chart');
+            if (!ctx) {
+                console.log('Goal revenue chart canvas not found - skipping');
+                return;
+            }
+
+            const data = prontoAbAnalyticsData.variations;
+
+            // Check if there's any revenue data
+            const hasRevenue = data.some(v => v.goal_revenue && v.goal_revenue > 0);
+            if (!hasRevenue) {
+                console.log('No goal revenue data available');
+                return;
+            }
+
+            const labels = data.map(v => v.name);
+            const revenues = data.map(v => v.goal_revenue || 0);
+
+            const backgroundColors = data.map(v => {
+                if (v.is_winner) return 'rgba(76, 175, 80, 0.8)';
+                if (v.is_control) return 'rgba(33, 150, 243, 0.8)';
+                return 'rgba(158, 158, 158, 0.6)';
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: revenues,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.8', '1').replace('0.6', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const value = context.parsed.y;
+                                    return 'Revenue: $' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Revenue ($)'
+                            },
+                            ticks: {
+                                callback: function (value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log('Goal revenue chart rendered');
         },
 
         /**

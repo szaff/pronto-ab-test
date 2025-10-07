@@ -417,4 +417,213 @@ trait Pronto_AB_Admin_Ajax
             'timestamp' => current_time('mysql')
         ));
     }
+
+    /**
+     * AJAX: Get all goals
+     */
+    public function ajax_get_goals()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $args = array(
+            'status' => sanitize_text_field($_POST['status'] ?? ''),
+            'goal_type' => sanitize_text_field($_POST['goal_type'] ?? ''),
+            'limit' => intval($_POST['limit'] ?? 100),
+            'offset' => intval($_POST['offset'] ?? 0)
+        );
+
+        $goals = Pronto_AB_Goal::get_all($args);
+
+        $formatted_goals = array();
+        foreach ($goals as $goal) {
+            $formatted_goals[] = array(
+                'id' => $goal->id,
+                'name' => $goal->name,
+                'description' => $goal->description,
+                'goal_type' => $goal->goal_type,
+                'tracking_method' => $goal->tracking_method,
+                'tracking_value' => $goal->tracking_value,
+                'default_value' => $goal->default_value,
+                'status' => $goal->status,
+                'total_conversions' => $goal->get_total_conversions(),
+                'campaigns' => count($goal->get_campaigns())
+            );
+        }
+
+        wp_send_json_success($formatted_goals);
+    }
+
+    /**
+     * AJAX: Get goals for a specific campaign
+     */
+    public function ajax_get_campaign_goals()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        if (!$campaign_id) {
+            wp_send_json_error(__('Campaign ID is required', 'pronto-ab'));
+        }
+
+        $goals = Pronto_AB_Goal::get_by_campaign($campaign_id);
+
+        $formatted_goals = array();
+        foreach ($goals as $goal) {
+            $formatted_goals[] = array(
+                'id' => $goal->id,
+                'name' => $goal->name,
+                'description' => $goal->description,
+                'goal_type' => $goal->goal_type,
+                'tracking_method' => $goal->tracking_method,
+                'is_primary' => $goal->is_primary ?? false,
+                'campaign_goal_value' => $goal->campaign_goal_value
+            );
+        }
+
+        wp_send_json_success($formatted_goals);
+    }
+
+    /**
+     * AJAX: Assign goal to campaign
+     */
+    public function ajax_assign_goal()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        $goal_id = intval($_POST['goal_id'] ?? 0);
+        $is_primary = isset($_POST['is_primary']) && $_POST['is_primary'] === 'true';
+        $goal_value = isset($_POST['goal_value']) ? floatval($_POST['goal_value']) : null;
+
+        if (!$campaign_id || !$goal_id) {
+            wp_send_json_error(__('Campaign ID and Goal ID are required', 'pronto-ab'));
+        }
+
+        // Verify goal exists
+        $goal = Pronto_AB_Goal::find($goal_id);
+        if (!$goal) {
+            wp_send_json_error(__('Goal not found', 'pronto-ab'));
+        }
+
+        // Verify campaign exists
+        $campaign = Pronto_AB_Campaign::find($campaign_id);
+        if (!$campaign) {
+            wp_send_json_error(__('Campaign not found', 'pronto-ab'));
+        }
+
+        $result = Pronto_AB_Goal::assign_to_campaign($goal_id, $campaign_id, $is_primary, $goal_value);
+
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => __('Goal assigned successfully', 'pronto-ab'),
+                'goal' => array(
+                    'id' => $goal->id,
+                    'name' => $goal->name,
+                    'is_primary' => $is_primary
+                )
+            ));
+        } else {
+            wp_send_json_error(__('Failed to assign goal', 'pronto-ab'));
+        }
+    }
+
+    /**
+     * AJAX: Remove goal from campaign
+     */
+    public function ajax_remove_goal()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        $goal_id = intval($_POST['goal_id'] ?? 0);
+
+        if (!$campaign_id || !$goal_id) {
+            wp_send_json_error(__('Campaign ID and Goal ID are required', 'pronto-ab'));
+        }
+
+        $result = Pronto_AB_Goal::remove_from_campaign($goal_id, $campaign_id);
+
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => __('Goal removed successfully', 'pronto-ab')
+            ));
+        } else {
+            wp_send_json_error(__('Failed to remove goal', 'pronto-ab'));
+        }
+    }
+
+    /**
+     * AJAX: Delete goal
+     */
+    public function ajax_delete_goal()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $goal_id = intval($_POST['goal_id'] ?? 0);
+        if (!$goal_id) {
+            wp_send_json_error(__('Goal ID is required', 'pronto-ab'));
+        }
+
+        $goal = Pronto_AB_Goal::find($goal_id);
+        if (!$goal) {
+            wp_send_json_error(__('Goal not found', 'pronto-ab'));
+        }
+
+        $result = $goal->delete();
+
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => __('Goal deleted successfully', 'pronto-ab')
+            ));
+        } else {
+            wp_send_json_error(__('Failed to delete goal', 'pronto-ab'));
+        }
+    }
+
+    /**
+     * AJAX: Get goal statistics
+     */
+    public function ajax_get_goal_stats()
+    {
+        check_ajax_referer('pronto_ab_ajax_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'pronto-ab'));
+        }
+
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        $goal_id = intval($_POST['goal_id'] ?? 0);
+
+        if (!$campaign_id || !$goal_id) {
+            wp_send_json_error(__('Campaign ID and Goal ID are required', 'pronto-ab'));
+        }
+
+        $comparison = Pronto_AB_Goal_Tracker::get_goal_comparison($campaign_id, $goal_id);
+        $revenue = Pronto_AB_Goal_Tracker::get_goal_revenue($campaign_id, $goal_id);
+
+        wp_send_json_success(array(
+            'comparison' => $comparison,
+            'revenue' => $revenue
+        ));
+    }
 }

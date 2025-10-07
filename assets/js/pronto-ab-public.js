@@ -63,6 +63,9 @@
       // Set up manual tracking API
       this.initializeTrackingAPI();
 
+      // Set up goal tracking
+      this.initializeGoalTracking();
+
       // Set up event listeners
       this.initializeEventListeners();
 
@@ -456,11 +459,15 @@
       };
 
       window.abTrackGoal = function (goalName, campaignId, variationId, value) {
-        return self.trackEvent("goal", campaignId, variationId, {
-          goalName: goalName,
-          goalValue: value || "",
-          timestamp: Date.now(),
-        });
+        // Find goal by name
+        const goal = self.findGoalByName(goalName);
+
+        if (!goal) {
+          self.log("Goal not found:", goalName);
+          return false;
+        }
+
+        return self.trackGoal(goal.id, goal.name, campaignId, variationId, value);
       };
 
       window.abGetActiveCampaigns = function () {
@@ -477,6 +484,155 @@
           timestamp: new Date().toISOString(),
         };
       };
+    },
+
+    /**
+     * Initialize goal tracking (auto-tracking based on selectors, URLs, etc.)
+     */
+    initializeGoalTracking: function () {
+      const self = this;
+
+      // Check if goals are available
+      if (!this.config.goals || this.config.goals.length === 0) {
+        this.log("No goals configured for this page");
+        return;
+      }
+
+      this.log("Initializing goal tracking for", this.config.goals.length, "goals");
+
+      // Set up tracking for each goal
+      this.config.goals.forEach(function (goal) {
+        self.log("Setting up tracking for goal:", goal.name, "Method:", goal.tracking_method);
+
+        if (goal.tracking_method === "selector" && goal.tracking_value) {
+          self.initializeSelectorGoalTracking(goal);
+        } else if (goal.tracking_method === "url" && goal.tracking_value) {
+          self.initializeUrlGoalTracking(goal);
+        }
+      });
+    },
+
+    /**
+     * Initialize CSS selector-based goal tracking
+     */
+    initializeSelectorGoalTracking: function (goal) {
+      const self = this;
+      const selector = goal.tracking_value;
+
+      this.log("Setting up selector tracking for:", selector);
+
+      // Track clicks on the selector within A/B test content
+      $(document).on("click", selector, function (e) {
+        const $clicked = $(this);
+        const $container = $clicked.closest(".pronto-ab-content");
+
+        if ($container.length) {
+          const campaignId = $container.data("campaign");
+          const variationId = $container.data("variation");
+
+          if (campaignId && variationId) {
+            self.log("Selector goal triggered:", goal.name);
+            self.trackGoal(goal.id, goal.name, campaignId, variationId, goal.default_value);
+          }
+        }
+      });
+    },
+
+    /**
+     * Initialize URL-based goal tracking
+     */
+    initializeUrlGoalTracking: function (goal) {
+      const self = this;
+      const urlPattern = goal.tracking_value;
+      const currentUrl = window.location.href;
+      const currentPath = window.location.pathname;
+
+      // Check if current URL matches the pattern
+      if (currentUrl.includes(urlPattern) || currentPath.includes(urlPattern)) {
+        this.log("URL goal triggered:", goal.name);
+
+        // Track for all active campaigns
+        this.state.activeCampaigns.forEach(function (variations, campaignId) {
+          variations.forEach(function (variation) {
+            self.trackGoal(goal.id, goal.name, campaignId, variation.variationId, goal.default_value);
+          });
+        });
+      }
+    },
+
+    /**
+     * Track a goal completion
+     */
+    trackGoal: function (goalId, goalName, campaignId, variationId, value) {
+      const self = this;
+
+      // Create unique goal tracking key
+      const goalKey = "goal_" + campaignId + "_" + variationId + "_" + goalId;
+
+      // Check if already tracked this session (prevent duplicates)
+      if (this.state.trackedEvents.has(goalKey)) {
+        this.log("Goal already tracked this session:", goalName);
+        return false;
+      }
+
+      this.log("Tracking goal:", goalName, "Value:", value);
+
+      // Use dedicated goal tracking endpoint
+      const trackingData = {
+        action: "pronto_ab_track_goal",
+        campaign_id: parseInt(campaignId),
+        variation_id: parseInt(variationId),
+        goal_id: parseInt(goalId),
+        visitor_id: this.config.visitorId,
+        nonce: this.config.nonce,
+        goal_value: value || null,
+        page_url: window.location.href,
+        referrer: document.referrer || "",
+        timestamp: Date.now(),
+      };
+
+      // Send tracking request
+      $.post(this.config.ajaxUrl, trackingData)
+        .done(function (response) {
+          if (response.success) {
+            self.state.trackedEvents.add(goalKey);
+            self.log("Goal tracked successfully:", goalName);
+
+            // Trigger custom event
+            self.trigger("goalTracked", {
+              goalId: goalId,
+              goalName: goalName,
+              campaignId: campaignId,
+              variationId: variationId,
+              value: value,
+              response: response,
+            });
+          } else {
+            self.log("Goal tracking failed:", response.data);
+          }
+        })
+        .fail(function (xhr, status, error) {
+          self.log("AJAX error tracking goal:", error);
+        });
+
+      return true;
+    },
+
+    /**
+     * Find a goal by name
+     */
+    findGoalByName: function (goalName) {
+      if (!this.config.goals) {
+        return null;
+      }
+
+      for (let i = 0; i < this.config.goals.length; i++) {
+        if (this.config.goals[i].name.toLowerCase() === goalName.toLowerCase()) {
+          return this.config.goals[i];
+        }
+      }
+
+      return null;
     },
 
     /**

@@ -45,6 +45,8 @@ class Pronto_AB_Public
         // AJAX handlers for tracking
         add_action('wp_ajax_pronto_ab_track', array($this, 'ajax_track_event'));
         add_action('wp_ajax_nopriv_pronto_ab_track', array($this, 'ajax_track_event'));
+        add_action('wp_ajax_pronto_ab_track_goal', array($this, 'ajax_track_goal'));
+        add_action('wp_ajax_nopriv_pronto_ab_track_goal', array($this, 'ajax_track_goal'));
 
         // Initialize visitor session
         add_action('wp', array($this, 'initialize_visitor_session'));
@@ -416,6 +418,9 @@ class Pronto_AB_Public
             true
         );
 
+        // Get active goals for this page
+        $active_goals = Pronto_AB_Goal::get_active_for_page();
+
         // Localize script for AJAX and configuration
         wp_localize_script('pronto-ab-public', 'abTestData', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -423,6 +428,7 @@ class Pronto_AB_Public
             'visitor_id' => $this->get_visitor_id(),
             'debug' => defined('WP_DEBUG') && WP_DEBUG,
             'auto_track' => get_option('pronto_ab_auto_track', true),
+            'goals' => $active_goals,
             'track_events' => array(
                 'clicks' => true,
                 'forms' => true,
@@ -691,14 +697,28 @@ class Pronto_AB_Public
         $additional_data['url'] = sanitize_url($_POST['page_url'] ?? '');
         $additional_data['referrer'] = sanitize_url($_POST['referrer'] ?? '');
 
-        // Track the event
-        $result = Pronto_AB_Analytics::track_event(
-            $campaign_id,
-            $variation_id,
-            $event_type,
-            $visitor_id,
-            $additional_data
-        );
+        // Handle goal events - redirect to dedicated goal tracker
+        if ($event_type === 'goal' && isset($additional_data['goalId'])) {
+            $goal_id = intval($additional_data['goalId']);
+            $goal_value = isset($additional_data['goalValue']) ? floatval($additional_data['goalValue']) : null;
+
+            $result = Pronto_AB_Goal_Tracker::track_goal(
+                $campaign_id,
+                $variation_id,
+                $goal_id,
+                $visitor_id,
+                $goal_value
+            );
+        } else {
+            // Track regular event
+            $result = Pronto_AB_Analytics::track_event(
+                $campaign_id,
+                $variation_id,
+                $event_type,
+                $visitor_id,
+                $additional_data
+            );
+        }
 
         if ($result) {
             wp_send_json_success(array(
@@ -709,6 +729,90 @@ class Pronto_AB_Public
             ));
         } else {
             wp_send_json_error('Failed to track event');
+        }
+    }
+
+    /**
+     * AJAX handler for tracking goal completions
+     */
+    public function ajax_track_goal()
+    {
+        // Verify nonce
+        if (!check_ajax_referer('pronto_ab_track', 'nonce', false)) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+
+        // Sanitize and validate input
+        $campaign_id = intval($_POST['campaign_id'] ?? 0);
+        $variation_id = intval($_POST['variation_id'] ?? 0);
+        $goal_id = intval($_POST['goal_id'] ?? 0);
+        $visitor_id = sanitize_text_field($_POST['visitor_id'] ?? '');
+        $goal_value = isset($_POST['goal_value']) ? floatval($_POST['goal_value']) : null;
+
+        // Validate required fields
+        if (!$campaign_id || !$variation_id || !$goal_id || !$visitor_id) {
+            wp_send_json_error(array(
+                'message' => 'Missing required fields',
+                'debug' => array(
+                    'campaign_id' => $campaign_id,
+                    'variation_id' => $variation_id,
+                    'goal_id' => $goal_id,
+                    'visitor_id' => $visitor_id ? 'set' : 'missing'
+                )
+            ));
+            return;
+        }
+
+        // Validate visitor ID matches current visitor
+        if ($visitor_id !== $this->get_visitor_id()) {
+            wp_send_json_error('Invalid visitor ID');
+            return;
+        }
+
+        // Verify goal exists and is assigned to this campaign
+        $goal = Pronto_AB_Goal::find($goal_id);
+        if (!$goal) {
+            wp_send_json_error('Goal not found');
+            return;
+        }
+
+        if (!Pronto_AB_Goal::is_assigned_to_campaign($goal_id, $campaign_id)) {
+            wp_send_json_error('Goal not assigned to this campaign');
+            return;
+        }
+
+        // Check if goal already completed by this visitor (prevent duplicates)
+        if (Pronto_AB_Goal_Tracker::has_completed_goal($campaign_id, $goal_id, $visitor_id)) {
+            wp_send_json_success(array(
+                'message' => 'Goal already completed by this visitor',
+                'goal_id' => $goal_id,
+                'goal_name' => $goal->name,
+                'duplicate' => true
+            ));
+            return;
+        }
+
+        // Track the goal
+        $result = Pronto_AB_Goal_Tracker::track_goal(
+            $campaign_id,
+            $variation_id,
+            $goal_id,
+            $visitor_id,
+            $goal_value
+        );
+
+        if ($result) {
+            wp_send_json_success(array(
+                'message' => 'Goal tracked successfully',
+                'goal_id' => $goal_id,
+                'goal_name' => $goal->name,
+                'goal_value' => $goal_value,
+                'campaign_id' => $campaign_id,
+                'variation_id' => $variation_id
+            ));
+        } else {
+            wp_send_json_error('Failed to track goal');
         }
     }
 

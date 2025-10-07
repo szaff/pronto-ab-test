@@ -184,6 +184,31 @@ trait Pronto_AB_Admin_Analytics
                 </div>
             </div>
 
+            <!-- Goal Performance Charts Row -->
+            <?php if (!empty($analytics_data[0]['goal_stats'])): ?>
+            <div class="analytics-charts-row">
+                <!-- Goal Conversion Rate Comparison Chart -->
+                <div class="analytics-chart-container">
+                    <div class="chart-header">
+                        <h3><?php esc_html_e('Goal Conversion Rates', 'pronto-ab'); ?></h3>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="goal-conversion-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Goal Revenue Chart -->
+                <div class="analytics-chart-container">
+                    <div class="chart-header">
+                        <h3><?php esc_html_e('Goal Revenue by Variation', 'pronto-ab'); ?></h3>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="goal-revenue-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Statistical Significance Section -->
             <div class="analytics-statistics-section">
                 <h2><?php esc_html_e('Statistical Analysis', 'pronto-ab'); ?></h2>
@@ -220,14 +245,19 @@ trait Pronto_AB_Admin_Analytics
         $total_impressions = 0;
         $total_conversions = 0;
         $total_visitors = 0;
+        $total_goal_conversions = 0;
+        $total_goal_revenue = 0;
 
         foreach ($analytics_data as $data) {
             $total_impressions += $data['impressions'];
             $total_conversions += $data['conversions'];
             $total_visitors += $data['unique_visitors'];
+            $total_goal_conversions += $data['goal_conversions'];
+            $total_goal_revenue += $data['goal_revenue'];
         }
 
         $overall_rate = $total_impressions > 0 ? ($total_conversions / $total_impressions) * 100 : 0;
+        $overall_goal_rate = $total_impressions > 0 ? ($total_goal_conversions / $total_impressions) * 100 : 0;
 
         // Find winner if exists
         $winner_name = null;
@@ -297,6 +327,41 @@ trait Pronto_AB_Admin_Analytics
                 </div>
             </div>
         <?php endif; ?>
+
+        <!-- Goal Metrics Cards -->
+        <?php if ($total_goal_conversions > 0): ?>
+            <div class="summary-card summary-card-goal">
+                <div class="card-icon">
+                    <span class="dashicons dashicons-flag"></span>
+                </div>
+                <div class="card-content">
+                    <div class="card-value"><?php echo number_format($total_goal_conversions); ?></div>
+                    <div class="card-label"><?php esc_html_e('Goal Conversions', 'pronto-ab'); ?></div>
+                </div>
+            </div>
+
+            <div class="summary-card summary-card-goal">
+                <div class="card-icon">
+                    <span class="dashicons dashicons-chart-line"></span>
+                </div>
+                <div class="card-content">
+                    <div class="card-value"><?php echo number_format($overall_goal_rate, 2); ?>%</div>
+                    <div class="card-label"><?php esc_html_e('Goal Conversion Rate', 'pronto-ab'); ?></div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($total_goal_revenue > 0): ?>
+            <div class="summary-card summary-card-revenue">
+                <div class="card-icon">
+                    <span class="dashicons dashicons-money-alt"></span>
+                </div>
+                <div class="card-content">
+                    <div class="card-value">$<?php echo number_format($total_goal_revenue, 2); ?></div>
+                    <div class="card-label"><?php esc_html_e('Total Revenue', 'pronto-ab'); ?></div>
+                </div>
+            </div>
+        <?php endif; ?>
     <?php
     }
 
@@ -328,6 +393,9 @@ trait Pronto_AB_Admin_Analytics
                     <th><?php esc_html_e('Impressions', 'pronto-ab'); ?></th>
                     <th><?php esc_html_e('Conversions', 'pronto-ab'); ?></th>
                     <th><?php esc_html_e('Conversion Rate', 'pronto-ab'); ?></th>
+                    <th><?php esc_html_e('Goal Conversions', 'pronto-ab'); ?></th>
+                    <th><?php esc_html_e('Goal Rate', 'pronto-ab'); ?></th>
+                    <th><?php esc_html_e('Revenue', 'pronto-ab'); ?></th>
                     <th><?php esc_html_e('Unique Visitors', 'pronto-ab'); ?></th>
                     <th><?php esc_html_e('Traffic Split', 'pronto-ab'); ?></th>
                     <th><?php esc_html_e('Status', 'pronto-ab'); ?></th>
@@ -353,6 +421,15 @@ trait Pronto_AB_Admin_Analytics
                                 <span class="lift-indicator <?php echo $data['lift'] > 0 ? 'positive' : 'negative'; ?>">
                                     (<?php echo $data['lift'] > 0 ? '+' : ''; ?><?php echo number_format($data['lift'], 1); ?>%)
                                 </span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo number_format($data['goal_conversions']); ?></td>
+                        <td><strong><?php echo number_format($data['goal_conversion_rate'], 2); ?>%</strong></td>
+                        <td>
+                            <?php if ($data['goal_revenue'] > 0): ?>
+                                <strong>$<?php echo number_format($data['goal_revenue'], 2); ?></strong>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo number_format($data['unique_visitors']); ?></td>
@@ -382,13 +459,18 @@ trait Pronto_AB_Admin_Analytics
         $data = [];
         $control_rate = null;
 
+        // Get campaign goals
+        $campaign_goals = Pronto_AB_Goal::get_by_campaign($campaign_id);
+
         foreach ($variations as $variation) {
-            $sql = "SELECT 
+            $sql = "SELECT
                         COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN visitor_id END) as unique_visitors,
                         SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions,
-                        SUM(CASE WHEN event_type = 'conversion' THEN 1 ELSE 0 END) as conversions
+                        SUM(CASE WHEN event_type = 'conversion' THEN 1 ELSE 0 END) as conversions,
+                        SUM(CASE WHEN event_type = 'goal' THEN 1 ELSE 0 END) as goal_conversions,
+                        SUM(CASE WHEN event_type = 'goal' AND goal_value IS NOT NULL THEN goal_value ELSE 0 END) as goal_revenue
                     FROM {$analytics_table}
-                    WHERE campaign_id = %d 
+                    WHERE campaign_id = %d
                     AND variation_id = %d
                     AND timestamp >= %s
                     AND timestamp <= %s";
@@ -403,7 +485,10 @@ trait Pronto_AB_Admin_Analytics
 
             $impressions = $result['impressions'] ?? 0;
             $conversions = $result['conversions'] ?? 0;
+            $goal_conversions = $result['goal_conversions'] ?? 0;
+            $goal_revenue = $result['goal_revenue'] ?? 0;
             $conversion_rate = $impressions > 0 ? ($conversions / $impressions) * 100 : 0;
+            $goal_conversion_rate = $impressions > 0 ? ($goal_conversions / $impressions) * 100 : 0;
 
             // Calculate lift vs control
             $lift = 0;
@@ -413,6 +498,19 @@ trait Pronto_AB_Admin_Analytics
                 $lift = (($conversion_rate - $control_rate) / $control_rate) * 100;
             }
 
+            // Get goal-specific stats
+            $goal_stats = [];
+            foreach ($campaign_goals as $goal) {
+                $goal_stat = Pronto_AB_Goal_Tracker::get_goal_stats($campaign_id, $variation->id, $goal->id);
+                $goal_stats[] = [
+                    'goal_id' => $goal->id,
+                    'goal_name' => $goal->name,
+                    'conversions' => $goal_stat['conversions'] ?? 0,
+                    'conversion_rate' => $goal_stat['conversion_rate'] ?? 0,
+                    'revenue' => $goal_stat['revenue'] ?? 0
+                ];
+            }
+
             $data[] = [
                 'id' => $variation->id,
                 'name' => $variation->name,
@@ -420,9 +518,13 @@ trait Pronto_AB_Admin_Analytics
                 'impressions' => (int)$impressions,
                 'conversions' => (int)$conversions,
                 'conversion_rate' => $conversion_rate,
+                'goal_conversions' => (int)$goal_conversions,
+                'goal_conversion_rate' => $goal_conversion_rate,
+                'goal_revenue' => (float)$goal_revenue,
                 'unique_visitors' => (int)($result['unique_visitors'] ?? 0),
                 'weight' => (float)$variation->weight_percentage,
-                'lift' => $lift
+                'lift' => $lift,
+                'goal_stats' => $goal_stats
             ];
         }
 

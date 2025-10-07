@@ -198,6 +198,11 @@ trait Pronto_AB_Admin_Pages
                             <!-- Enhanced Publish Box -->
                             <?php $this->render_publish_box($campaign); ?>
 
+                            <!-- Goals Box -->
+                            <?php if ($campaign_id): ?>
+                                <?php $this->render_campaign_goals_box($campaign); ?>
+                            <?php endif; ?>
+
                             <!-- Quick Actions Box -->
                             <?php if ($campaign_id): ?>
                                 <?php $this->render_quick_actions_box($campaign); ?>

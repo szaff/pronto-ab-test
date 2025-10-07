@@ -189,11 +189,13 @@ class Pronto_AB_Statistics
 
     /**
      * Get human-readable interpretation of results
-     * 
+     *
      * @param array $stats Statistical results
+     * @param string $control_name Optional name of control variation
+     * @param string $variant_name Optional name of variant variation
      * @return string Interpretation message
      */
-    public static function interpret_results($stats)
+    public static function interpret_results($stats, $control_name = null, $variant_name = null)
     {
         if (isset($stats['error'])) {
             return $stats['error'];
@@ -208,7 +210,11 @@ class Pronto_AB_Statistics
             return "The difference between variations is not yet statistically significant. Continue testing to gather more data.";
         }
 
-        $better = $rate_b > $rate_a ? 'Variation B' : 'Variation A';
+        // Use actual variation names if provided, otherwise fall back to generic names
+        $name_a = $control_name ?: 'Variation A';
+        $name_b = $variant_name ?: 'Variation B';
+
+        $better = $rate_b > $rate_a ? $name_b : $name_a;
         $direction = $lift > 0 ? 'increase' : 'decrease';
 
         return sprintf(
@@ -313,7 +319,7 @@ class Pronto_AB_Statistics
                 'variation_name' => $variant['name'],
                 'control_name' => $control['name'],
                 'stats' => $stats,
-                'interpretation' => self::interpret_results($stats),
+                'interpretation' => self::interpret_results($stats, $control['name'], $variant['name']),
                 'data_check' => self::check_data_sufficiency(
                     $control['impressions'],
                     $control['conversions'],

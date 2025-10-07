@@ -16,6 +16,7 @@ require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-ajax.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-helpers.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-statistics.php';
 require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-analytics.php';
+require_once PAB_ADMIN_DIR . 'trait-pronto-ab-admin-goals.php';
 
 class Pronto_AB_Admin
 {
@@ -25,6 +26,7 @@ class Pronto_AB_Admin
     use Pronto_AB_Admin_Helpers;
     use Pronto_AB_Admin_Statistics;
     use Pronto_AB_Admin_Analytics;
+    use Pronto_AB_Admin_Goals;
 
     /**
      * Constructor
@@ -98,6 +100,15 @@ class Pronto_AB_Admin
         );
 
         $submenu_4 = add_submenu_page(
+            'pronto-abs',
+            __('Goals', 'pronto-ab'),
+            __('Goals', 'pronto-ab'),
+            'manage_options',
+            'pronto-abs-goals',
+            array($this, 'goals_page')
+        );
+
+        $submenu_5 = add_submenu_page(
             'pronto-abs',
             __('Settings', 'pronto-ab'),
             __('Settings', 'pronto-ab'),
@@ -559,7 +570,15 @@ class Pronto_AB_Admin
             'pronto_ab_export_data',
 
             // Statistics feature
-            'pronto_ab_refresh_statistics'
+            'pronto_ab_refresh_statistics',
+
+            // Goals system handlers
+            'pronto_ab_get_goals',
+            'pronto_ab_get_campaign_goals',
+            'pronto_ab_assign_goal',
+            'pronto_ab_remove_goal',
+            'pronto_ab_delete_goal',
+            'pronto_ab_get_goal_stats'
         );
 
         foreach ($ajax_handlers as $handler) {
