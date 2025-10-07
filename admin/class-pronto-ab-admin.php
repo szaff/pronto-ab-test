@@ -115,6 +115,15 @@ class Pronto_AB_Admin
                 'pronto-abs-test-data',
                 array('Pronto_AB_Test_Data_Generator', 'render_admin_page')
             );
+
+            add_submenu_page(
+                'pronto-abs',
+                __('Test Winner Declaration', 'pronto-ab'),
+                __('🔧 Test Winner', 'pronto-ab'),
+                'manage_options',
+                'pronto-ab-test-winner',
+                array($this, 'render_test_winner_page')
+            );
         }
     }
 
@@ -786,6 +795,14 @@ class Pronto_AB_Admin
         }
 
         return implode("\n", $csv_lines);
+    }
+
+    /**
+     * Render test winner declaration page
+     */
+    public function render_test_winner_page()
+    {
+        include PAB_ADMIN_DIR . 'views/page-test-winner-declaration.php';
     }
 
     /**

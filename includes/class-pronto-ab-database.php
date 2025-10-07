@@ -22,7 +22,7 @@ class Pronto_AB_Database
     /**
      * Database version for managing updates
      */
-    const DB_VERSION = '1.0.0';
+    const DB_VERSION = '1.1.0';
 
     /**
      * Table names with WordPress prefix
@@ -43,6 +43,12 @@ class Pronto_AB_Database
     {
         global $wpdb;
         return $wpdb->prefix . 'pronto_ab_analytics';
+    }
+
+    public static function get_notifications_table()
+    {
+        global $wpdb;
+        return $wpdb->prefix . 'pronto_ab_notifications';
     }
 
     /**
@@ -67,13 +73,20 @@ class Pronto_AB_Database
             start_date datetime DEFAULT NULL,
             end_date datetime DEFAULT NULL,
             winner_variation_id bigint(20) unsigned DEFAULT NULL,
+            winner_declared_at datetime DEFAULT NULL,
+            winner_declared_by bigint(20) unsigned DEFAULT NULL,
+            auto_winner_enabled tinyint(1) DEFAULT 0,
+            archived_at datetime DEFAULT NULL,
+            archived_by bigint(20) unsigned DEFAULT NULL,
             total_impressions bigint(20) unsigned DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY target_post (target_post_id, target_post_type),
             KEY status (status),
-            KEY dates (start_date, end_date)
+            KEY dates (start_date, end_date),
+            KEY winner (winner_variation_id),
+            KEY archived (archived_at)
         ) $charset_collate;";
 
         // Variations table
@@ -120,13 +133,147 @@ class Pronto_AB_Database
             FOREIGN KEY (variation_id) REFERENCES $variations_table(id) ON DELETE CASCADE
         ) $charset_collate;";
 
+        // Notifications table
+        $notifications_table = self::get_notifications_table();
+        $notifications_sql = "CREATE TABLE $notifications_table (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            campaign_id bigint(20) unsigned NOT NULL,
+            notification_type varchar(50) NOT NULL,
+            title varchar(255) NOT NULL,
+            message text,
+            is_read tinyint(1) DEFAULT 0,
+            user_id bigint(20) unsigned DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY campaign_id (campaign_id),
+            KEY notification_type (notification_type),
+            KEY is_read (is_read),
+            KEY user_id (user_id),
+            KEY created_at (created_at),
+            FOREIGN KEY (campaign_id) REFERENCES $campaigns_table(id) ON DELETE CASCADE
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($campaigns_sql);
         dbDelta($variations_sql);
         dbDelta($analytics_sql);
+        dbDelta($notifications_sql);
 
         // Update database version
         update_option('pronto_ab_db_version', self::DB_VERSION);
+    }
+
+    /**
+     * Migrate database from older versions
+     * 
+     * @param string $installed_version Current installed version
+     */
+    public static function migrate_database($installed_version)
+    {
+        global $wpdb;
+
+        // Migration from 1.0.0 to 1.1.0
+        if (version_compare($installed_version, '1.1.0', '<')) {
+            self::migrate_to_1_1_0();
+        }
+
+        // Update version
+        update_option('pronto_ab_db_version', self::DB_VERSION);
+    }
+
+    /**
+     * Migration to version 1.1.0
+     * Adds winner declaration and archiving columns
+     */
+    private static function migrate_to_1_1_0()
+    {
+        global $wpdb;
+
+        $campaigns_table = self::get_campaigns_table();
+
+        // Check if columns already exist to avoid errors
+        $columns = $wpdb->get_col("DESC {$campaigns_table}", 0);
+
+        // Add winner_declared_at column
+        if (!in_array('winner_declared_at', $columns)) {
+            $wpdb->query("ALTER TABLE {$campaigns_table} 
+                ADD COLUMN winner_declared_at datetime DEFAULT NULL AFTER winner_variation_id");
+        }
+
+        // Add winner_declared_by column
+        if (!in_array('winner_declared_by', $columns)) {
+            $wpdb->query("ALTER TABLE {$campaigns_table} 
+                ADD COLUMN winner_declared_by bigint(20) unsigned DEFAULT NULL AFTER winner_declared_at");
+        }
+
+        // Add auto_winner_enabled column
+        if (!in_array('auto_winner_enabled', $columns)) {
+            $wpdb->query("ALTER TABLE {$campaigns_table} 
+                ADD COLUMN auto_winner_enabled tinyint(1) DEFAULT 0 AFTER winner_declared_by");
+        }
+
+        // Add archived_at column
+        if (!in_array('archived_at', $columns)) {
+            $wpdb->query("ALTER TABLE {$campaigns_table} 
+                ADD COLUMN archived_at datetime DEFAULT NULL AFTER auto_winner_enabled");
+        }
+
+        // Add archived_by column
+        if (!in_array('archived_by', $columns)) {
+            $wpdb->query("ALTER TABLE {$campaigns_table} 
+                ADD COLUMN archived_by bigint(20) unsigned DEFAULT NULL AFTER archived_at");
+        }
+
+        // Add indexes
+        $wpdb->query("ALTER TABLE {$campaigns_table} 
+            ADD KEY winner (winner_variation_id), 
+            ADD KEY archived (archived_at)");
+
+        // Create notifications table
+        self::create_notifications_table();
+
+        // Log migration
+        error_log('Pronto A/B: Database migrated to version 1.1.0');
+    }
+
+    /**
+     * Create notifications table separately
+     * Used for migrations and fresh installs
+     */
+    private static function create_notifications_table()
+    {
+        global $wpdb;
+
+        $notifications_table = self::get_notifications_table();
+        $campaigns_table = self::get_campaigns_table();
+
+        // Check if table already exists
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$notifications_table}'") === $notifications_table) {
+            return; // Table already exists
+        }
+
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $notifications_table (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            campaign_id bigint(20) unsigned NOT NULL,
+            notification_type varchar(50) NOT NULL,
+            title varchar(255) NOT NULL,
+            message text,
+            is_read tinyint(1) DEFAULT 0,
+            user_id bigint(20) unsigned DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY campaign_id (campaign_id),
+            KEY notification_type (notification_type),
+            KEY is_read (is_read),
+            KEY user_id (user_id),
+            KEY created_at (created_at),
+            FOREIGN KEY (campaign_id) REFERENCES $campaigns_table(id) ON DELETE CASCADE
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
     }
 
     /**
@@ -137,6 +284,7 @@ class Pronto_AB_Database
         global $wpdb;
 
         $tables = array(
+            self::get_notifications_table(),
             self::get_analytics_table(),
             self::get_variations_table(),
             self::get_campaigns_table()

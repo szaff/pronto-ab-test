@@ -17,6 +17,11 @@ class Pronto_AB_Campaign
     public $start_date;
     public $end_date;
     public $winner_variation_id;
+    public $winner_declared_at;
+    public $winner_declared_by;
+    public $auto_winner_enabled;
+    public $archived_at;
+    public $archived_by;
     public $total_impressions;
     public $created_at;
     public $updated_at;
@@ -37,6 +42,11 @@ class Pronto_AB_Campaign
         $this->start_date = null;
         $this->end_date = null;
         $this->winner_variation_id = null;
+        $this->winner_declared_at = null;
+        $this->winner_declared_by = null;
+        $this->auto_winner_enabled = 0;
+        $this->archived_at = null;
+        $this->archived_by = null;
         $this->total_impressions = 0;
         $this->created_at = null;
         $this->updated_at = null;
@@ -62,6 +72,11 @@ class Pronto_AB_Campaign
             'start_date',
             'end_date',
             'winner_variation_id',
+            'winner_declared_at',
+            'winner_declared_by',
+            'auto_winner_enabled',
+            'archived_at',
+            'archived_by',
             'total_impressions',
             'created_at',
             'updated_at'
@@ -86,7 +101,6 @@ class Pronto_AB_Campaign
     {
         global $wpdb;
 
-
         // Verify table exists
         $table = Pronto_AB_Database::get_campaigns_table();
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") === $table;
@@ -96,6 +110,7 @@ class Pronto_AB_Campaign
             Pronto_AB_Database::create_tables();
         }
 
+        // Prepare data array - ALL fields that go into the database
         $data = array(
             'name' => $this->name,
             'description' => $this->description,
@@ -105,47 +120,65 @@ class Pronto_AB_Campaign
             'traffic_split' => $this->traffic_split ?: '50/50',
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
-            'winner_variation_id' => $this->winner_variation_id
+            'winner_variation_id' => $this->winner_variation_id,
+            'winner_declared_at' => $this->winner_declared_at,
+            'winner_declared_by' => $this->winner_declared_by,
+            'auto_winner_enabled' => $this->auto_winner_enabled,
+            'archived_at' => $this->archived_at,
+            'archived_by' => $this->archived_by,
+            'total_impressions' => $this->total_impressions
         );
 
-        $formats = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%d');
+        // Format specifications for each field
+        // %s = string, %d = integer, %f = float
+        $formats = array(
+            '%s',  // name (varchar)
+            '%s',  // description (text)
+            '%s',  // status (varchar)
+            '%d',  // target_post_id (bigint) - nullable, but %d handles NULL
+            '%s',  // target_post_type (varchar)
+            '%s',  // traffic_split (varchar)
+            '%s',  // start_date (datetime)
+            '%s',  // end_date (datetime)
+            '%d',  // winner_variation_id (bigint)
+            '%s',  // winner_declared_at (datetime)
+            '%d',  // winner_declared_by (bigint)
+            '%d',  // auto_winner_enabled (tinyint)
+            '%s',  // archived_at (datetime)
+            '%d',  // archived_by (bigint)
+            '%d'   // total_impressions (bigint)
+        );
 
-
+        // Update existing campaign
         if ($this->id) {
-            // Update existing campaign
-
             $result = $wpdb->update(
                 $table,
                 $data,
                 array('id' => $this->id),
                 $formats,
-                array('%d')
+                array('%d') // ID is an integer
             );
 
             if ($result === false) {
-                error_log("Pronto A/B Debug: Update error: " . $wpdb->last_error);
-                error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
-            }
-        } else {
-            // Create new campaign
-
-            $result = $wpdb->insert(
-                $table,
-                $data,
-                $formats
-            );
-
-            if ($result === false) {
-                error_log("Pronto A/B Debug: Insert error: " . $wpdb->last_error);
-                error_log("Pronto A/B Debug: Last query: " . $wpdb->last_query);
+                error_log("Pronto A/B Error: Failed to update campaign ID {$this->id}");
+                error_log("MySQL Error: " . $wpdb->last_error);
+                return false;
             }
 
-            if ($result) {
-                $this->id = $wpdb->insert_id;
-            }
+            return true;
         }
 
-        return $result !== false;
+        // Insert new campaign
+        $result = $wpdb->insert($table, $data, $formats);
+
+        if ($result === false) {
+            error_log("Pronto A/B Error: Failed to insert new campaign");
+            error_log("MySQL Error: " . $wpdb->last_error);
+            return false;
+        }
+
+        $this->id = $wpdb->insert_id;
+        return true;
     }
 
     /**

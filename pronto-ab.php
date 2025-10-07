@@ -110,6 +110,9 @@ class Pronto_AB
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 
+        // Database migration check
+        add_action('admin_init', array($this, 'check_database_version'));
+
         // A/B Test AJAX handlers
         add_action('wp_ajax_pronto_ab_get_posts', array('Pronto_AB_Admin', 'ajax_get_posts'));
     }
@@ -187,6 +190,23 @@ class Pronto_AB
 
         // Set activation flag for admin notice
         set_transient('PAB_activation_notice', true, 60);
+    }
+
+    /**
+     * Check and run database migrations on plugin load
+     */
+    public function check_database_version()
+    {
+        // Only check in admin
+        if (!is_admin()) {
+            return;
+        }
+
+        // Check if database needs update
+        if (Pronto_AB_Database::needs_update()) {
+            $installed_version = get_option('pronto_ab_db_version', '1.0.0');
+            Pronto_AB_Database::migrate_database($installed_version);
+        }
     }
 
     /**
